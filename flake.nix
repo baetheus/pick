@@ -1,7 +1,7 @@
 {
-  description = "A simple flake";
+  description = "Deno Library: Magic String Routing";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/22.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   inputs.utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, utils }:
@@ -9,7 +9,7 @@
       pkgs = import nixpkgs { inherit system; };
       shell = with pkgs; mkShell {
         # Insert Packages Here
-        packages = [];
+        packages = [ deno ];
       };
     in {
       devShells.default = shell;

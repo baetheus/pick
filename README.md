@@ -1,4 +1,4 @@
-# go - a somewhat simple router for [Deno](https://deno.land) http servers.
+# pick - a somewhat simple router for [Deno](https://deno.land) http servers.
 
 This project aims to provide a simple http server router for Deno that fits my
 peculiar vision. In particular, I prefer an http router with the following
@@ -28,7 +28,7 @@ the planned features in no particular order.
 
 ## Design Ideas
 
-The core idea behind the go router is to build up composable tools from the
+The core idea behind the pick router is to build up composable tools from the
 following types:
 
 ```ts
@@ -48,7 +48,7 @@ type Route<S, V> = {
 }
 ```
 
-A Router is then a collection of Routes. In the first stage of go the Router is
+A Router is then a collection of Routes. In the first stage of pick the Router is
 a simple array of Routes, which is iterated through and each Parser is applied.
 If the Parser returns a Some, then the route is considered Matched and the
 Handler is invoked.

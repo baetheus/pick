@@ -17,6 +17,7 @@
     "https://deno.land/x/fun@v2.0.0/foldable.ts": "9c8d52facd9d88eb9680271017c5e7c765944bf949eae7d2f4a135a3e92e8aeb",
     "https://deno.land/x/fun@v2.0.0/initializable.ts": "fda123c4e5dbafd0dc0b3d6bd1afa951319012e7f7a7d8ddddefc79ecb609eb9",
     "https://deno.land/x/fun@v2.0.0/kind.ts": "c7cbb2b0c52484fb3e53cc0d507fd1db36aa1338319323296d134213c4d43a6d",
+    "https://deno.land/x/fun@v2.0.0/map.ts": "f454e0b27a586f50864fc7b99d736ad650c254b5af9cb50e76382e5012be00e4",
     "https://deno.land/x/fun@v2.0.0/mappable.ts": "b3d30f4775d0f8b00726588986fdcd09bc0754e812e04c82a3daff0d19d560e4",
     "https://deno.land/x/fun@v2.0.0/nil.ts": "8a31e8c94e69b2fbce0e3a84980109cdfab93e3c8db182cd9eeff3d2c0e8ba8b",
     "https://deno.land/x/fun@v2.0.0/option.ts": "827c280d3fc29330daa3e11d94ec8abd05eccbc842429533f28cf8282ff9de3c",

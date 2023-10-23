@@ -28,34 +28,47 @@ the planned features in no particular order.
 
 ## Design Ideas
 
-The core idea behind the pick router is to build up composable tools from the
-following types:
+There are two driving ideas in this library. The first is that we can derive
+rich type information from a simple string route definition like "GET /:home" and
+use it to route and parse.
+
+The second is to build a route Handler as an indexed, asynchronous state monad.
+That's some fancy words for the following type:
 
 ```ts
-type Context<S, V> = {
-  readonly request: Request,
-  readonly state: S,
-  readonly variables: V,
-};
-
-type Handler<S, V, A = Response> = (ctx: Context<S, V>) => Promise<[Context<S, V>, A]>;
-
-type Parser<S, V> = (req: Request, state: S) => Option<V>;
-
-type Route<S, V> = {
-  readonly parser: Parser<S, V>;
-  readonly handler: Handler<S, V>;
-}
+type Handler<S, A, O> = (s: S) => Promise<[A, O]>;
 ```
 
-A Router is then a collection of Routes. In the first stage of pick the Router is
-a simple array of Routes, which is iterated through and each Parser is applied.
-If the Parser returns a Some, then the route is considered Matched and the
-Handler is invoked.
+Handler is super generic and doesn't really illuminate our design. More
+generally, the router in pick expects the more specific Handler that looks like:
 
-In the future I intend to explore radix trees and other data structures for
-deciding the route to use and for building more complex parser/handler
-combinations.
+```ts
+// Context
+// Request is the web standard HTTP request type
+// S is the application state
+// V is a collection of variables parsed from the request path
+type Context<S, V> = {
+  readonly request: Request;
+  readonly state: S;
+  readonly variables: V;
+}
+
+type RouteHandler<S, V, O> = Handler<Context<S, V>, Response, O>;
+```
+
+The Router doesn't really care about the output state `O` of the Handler but we
+keep it around in case the user wants to compose Handlers by modifying state.
+Lastly, we come to the default type that most users of this library will use. I
+call it a `Responder`, but it is really the non-indexed part of `Handler`
+
+```ts
+type Responder<D, A> = (d: D) => A | Promise<A>;
+```
+
+`Handler` is a effectively a super type of `Responder`. This gets at the root
+design idea of pick. Start with a sufficiently powerful type for route handling
+that can be trivial "simplified" to a very useful minimal implementation.
+
 
 ## Contributing
 

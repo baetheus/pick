@@ -1,14 +1,26 @@
-import type { $, In, Kind, Out } from "fun/kind.ts";
+import type { Kind, Out } from "fun/kind.ts";
 import type { Flatmappable } from "fun/flatmappable.ts";
+
+import * as P from "fun/promise.ts";
+import { pipe } from "fun/fn.ts";
 
 export type Handler<D, A, B = D> = (d: D) => Promise<[A, B]>;
 
-export interface KindHandler extends Kind {
-  readonly kind: Handler<In<this, 0>, Out<this, 0>, Out<this, 1>>;
+export interface KindHandler<S> extends Kind {
+  readonly kind: Handler<S, Out<this, 0>, S>;
 }
 
 export function id<S>(): Handler<S, S, S> {
   return (s) => Promise.resolve([s, s]);
+}
+
+export function delay(
+  ms: number,
+): <D, A, B>(ua: Handler<D, A, B>) => Handler<D, A, B> {
+  return (ua) => async (s) => {
+    await P.wait(ms);
+    return ua(s);
+  };
 }
 
 export function wrap<A, D = unknown>(a: A | Promise<A>): Handler<D, A, D> {
@@ -75,9 +87,42 @@ export function execute<S>(s: S): <A, O>(ua: Handler<S, A, O>) => Promise<O> {
   return async (ua) => (await ua(s))[1];
 }
 
-// export const FlatmappableHandler: Flatmappable<KindHandler> = {
-//   wrap,
-//   apply,
-//   map,
-//   flatmap,
-// };
+export function tap<A>(
+  fa: (a: A) => unknown,
+): <S, O>(ua: Handler<S, A, O>) => Handler<S, A, O> {
+  return flatmap((a) => {
+    fa(a);
+    return wrap(a);
+  });
+}
+
+export function bind<N extends string, A, I, S2, S3>(
+  name: Exclude<N, keyof A>,
+  faui: (a: A) => Handler<S2, I, S3>,
+): <S1>(
+  ua: Handler<S1, A, S2>,
+) => Handler<
+  S1,
+  { readonly [K in keyof A | N]: K extends keyof A ? A[K] : I },
+  S3
+> {
+  return <S1>(ua: Handler<S1, A, S2>) => {
+    type Return = { readonly [K in keyof A | N]: K extends keyof A ? A[K] : I };
+    return pipe(
+      ua,
+      flatmap((a) => map((i) => ({ ...a, [name]: i }) as Return)(faui(a))),
+    );
+  };
+}
+
+export function bindTo<N extends string>(
+  name: N,
+): <S1, A, S2>(
+  ua: Handler<S1, A, S2>,
+) => Handler<S1, { readonly [K in N]: A }, S2> {
+  return map((value) => ({ [name]: value }) as { [K in N]: typeof value });
+}
+
+export function getFlatmappableHandler<S>(): Flatmappable<KindHandler<S>> {
+  return { wrap, apply, map, flatmap };
+}

@@ -4,7 +4,7 @@ import type { Handler } from "./handler.ts";
 import type { Route } from "./route.ts";
 
 import { append } from "fun/array.ts";
-import { isNone } from "fun/option.ts";
+import { isSome } from "fun/option.ts";
 import { pipe } from "fun/fn.ts";
 
 import { evaluate, puts } from "./handler.ts";
@@ -42,12 +42,13 @@ export function use<S>(
 ): (router: Router<S>) => Deno.ServeHandler {
   return (router) => (request) => {
     for (const { parser, handler } of router) {
-      const variables = parser(request);
-      if (isNone(variables)) {
-        continue;
+      const path = parser(request);
+      // Found a matching route
+      if (isSome(path)) {
+        return pipe(handler, evaluate(context(request, state, path.value)));
       }
-      return pipe(handler, evaluate(context(request, state, variables.value)));
     }
+    // Default route
     return notFound(request);
   };
 }

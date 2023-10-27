@@ -1,10 +1,7 @@
-/** @jsx h */
-
 import type { Context } from "../context.ts";
 
 import * as N from "fun/nil.ts";
 import * as P from "fun/promise.ts";
-import { h } from "https://esm.sh/preact@10.18.1";
 import { pipe } from "fun/fn.ts";
 
 import { handle, respond, router, use } from "../router.ts";
@@ -61,7 +58,7 @@ const handler = pipe(
   // This is an example of parsing values out of the path
   respond(
     "GET /person/:first/:last/:age/:children/",
-    ({ variables: { first, last, age } }) => {
+    ({ path: { first, last, age } }) => {
       console.log({ first, last, age });
       return R.jsx(<h1>Hi {first} {last}, {age}!</h1>);
     },

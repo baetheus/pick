@@ -4,13 +4,13 @@
 export type Context<S = unknown, V = unknown> = {
   readonly request: Request;
   readonly state: S;
-  readonly variables: V;
+  readonly path: V;
 };
 
 export function context<S, V>(
   request: Request,
   state: S,
-  variables: V,
+  path: V,
 ): Context<S, V> {
-  return { state, request, variables };
+  return { state, request, path };
 }

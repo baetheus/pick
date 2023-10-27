@@ -1,6 +1,11 @@
 {
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  },
   "imports": {
-    "fun": "https://deno.land/x/fun@v2.0.0",
-    "fun/": "https://deno.land/x/fun@v2.0.0/"
+    "fun/": "https://deno.land/x/fun@v2.0.0/",
+    "preact": "https://esm.sh/preact@10.15.1",
+    "preact/": "https://esm.sh/preact@10.15.1/"
   }
 }

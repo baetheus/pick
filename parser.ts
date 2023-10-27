@@ -1,8 +1,13 @@
 import type { Option } from "fun/option.ts";
 
-import { none, some } from "fun/option.ts";
+import { fromNullable, map, none } from "fun/option.ts";
+import { pipe } from "fun/fn.ts";
 
-type HttpVerbs =
+type Rec<Key extends string | symbol = string, Value = string> = {
+  readonly [K in Key]: Value;
+};
+
+export type HttpVerbs =
   | "GET"
   | "HEAD"
   | "POST"
@@ -13,7 +18,8 @@ type HttpVerbs =
   | "TRACE"
   | "PATCH";
 
-type Rec<Key extends string = string> = { readonly [K in Key]: string };
+export const Wildcards = Symbol("Wildcards");
+export type Wildcards = typeof Wildcards;
 
 export type PathVars<
   P extends string,
@@ -21,9 +27,12 @@ export type PathVars<
   R extends Record<string, string> = {},
 > = P extends `${HttpVerbs} /${infer Part}` ? PathVars<Part>
   : P extends `:${infer Key}/${infer Part}` ? PathVars<Part, R & Rec<Key>>
-  : P extends `${infer _}/${infer Part}` ? PathVars<Part, R>
+  : P extends `*/${infer Part}`
+    ? PathVars<Part, R & Rec<Wildcards, readonly string[]>>
+  : P extends `${string}/${infer Part}` ? PathVars<Part, R>
   : P extends `:${infer Key}` ? PathVars<"", R & Rec<Key>>
-  : { readonly [K in keyof R]: string };
+  : P extends `*` ? PathVars<"", R & Rec<Wildcards, readonly string[]>>
+  : { readonly [K in keyof R]: R[K] };
 
 export type RouteString = `${HttpVerbs} /${string}`;
 
@@ -32,38 +41,31 @@ export type RouteParser<V> = (req: Request) => Option<V>;
 export function routeParser<In extends RouteString>(
   route: In,
 ): RouteParser<PathVars<In>> {
-  const [verb, rest] = route.split(" ");
-  const words = rest.split("/");
+  const [method, pathname] = route.split(" ");
+  const pattern = new URLPattern({ pathname });
 
   return (req) => {
-    const v = req.method.toUpperCase();
-    const url = new URL(req.url);
-    const path = url.pathname.split("/");
+    const _method = req.method.toUpperCase();
 
-    if (verb !== v) {
+    if (_method !== method) {
       return none;
-    } else if (words.length !== path.length) {
-      return none;
-    } else {
-      const vars: Record<string, string> = {};
-
-      for (let i = 0; i < words.length; i++) {
-        const left = words[i];
-        const right = path[i];
-
-        // Set variable in vars record
-        if (left.startsWith(":")) {
-          vars[left.slice(1)] = right;
-          continue;
-        }
-
-        // Bail early if not a variable and route doesn't match
-        if (left.toUpperCase() !== right.toUpperCase()) {
-          return none;
-        }
-      }
-
-      return some(vars as PathVars<In>);
     }
+    return pipe(
+      pattern.exec(req.url),
+      fromNullable,
+      map((result) => {
+        const groups: { [K: string | symbol]: string | string[] | undefined } =
+          { ...result.pathname.groups };
+        if (0 in groups) {
+          const wildcards: string[] = [];
+          let index = -1;
+          while (++index in groups) {
+            wildcards.push(groups[index] as string);
+          }
+          groups[Wildcards] = wildcards;
+        }
+        return groups as PathVars<In>;
+      }),
+    );
   };
 }

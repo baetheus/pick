@@ -46,7 +46,7 @@ export function use<S>(
       if (isNone(variables)) {
         continue;
       }
-      return pipe(handler, evaluate(context(request, state, variables)));
+      return pipe(handler, evaluate(context(request, state, variables.value)));
     }
     return notFound(request);
   };

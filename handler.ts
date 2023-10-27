@@ -1,4 +1,11 @@
+import type { $, In, Kind, Out } from "fun/kind.ts";
+import type { Flatmappable } from "fun/flatmappable.ts";
+
 export type Handler<D, A, B = D> = (d: D) => Promise<[A, B]>;
+
+export interface KindHandler extends Kind {
+  readonly kind: Handler<In<this, 0>, Out<this, 0>, Out<this, 1>>;
+}
 
 export function id<S>(): Handler<S, S, S> {
   return (s) => Promise.resolve([s, s]);
@@ -67,3 +74,10 @@ export function evaluate<S>(s: S): <A, O>(ua: Handler<S, A, O>) => Promise<A> {
 export function execute<S>(s: S): <A, O>(ua: Handler<S, A, O>) => Promise<O> {
   return async (ua) => (await ua(s))[1];
 }
+
+// export const FlatmappableHandler: Flatmappable<KindHandler> = {
+//   wrap,
+//   apply,
+//   map,
+//   flatmap,
+// };

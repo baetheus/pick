@@ -58,9 +58,15 @@ const handler = pipe(
       N.getOrElse(() => state.defaultURL),
       safeFetch,
     )),
+  // This is an example of parsing values out of the path
+  respond(
+    "GET /person/:first/:last/:age/:children/",
+    ({ variables: { first, last, age } }) => {
+      console.log({ first, last, age });
+      return R.jsx(<h1>Hi {first} {last}, {age}!</h1>);
+    },
+  ),
   use({ count: 0, defaultURL }),
 );
 
 Deno.serve(handler);
-
-cacheUrl;

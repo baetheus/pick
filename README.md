@@ -1,18 +1,32 @@
-# pick - a somewhat simple router for [Deno](https://deno.land) http servers.
+# pick - no magic router for [Deno](https://deno.land) http servers.
 
-This project aims to provide a simple http server router for Deno that fits my
-peculiar vision. In particular, I prefer an http router with the following
-properties:
+Deno gives us a powerful, fast, web standards compliant http server with a
+simple and extensible new interface. However, most router modules are still
+implementing the patterns pioneered in nodejs. Specifically, we see
+reimplementations of untyped middleware (express) with its bug ridden `next`
+pattern.
+
+Additionally, beyond the middleware based routers, we have next, remix, and
+fresh creating automagical frameworks that are often template heavy and
+complicated just to satisfy the constantly moving goalpost of developer
+experience.
+
+This module seeks to explore a different paradigm. Namely, pick is focused on
+the following:
 
 1. Doesn't require any templating tools or automagical project setup.
 2. Builds directly on the Deno.ServeHandler, which itself builds on web
    standards.
 3. Uses typescript types and request parsing to provide rich types to handlers.
-4. Composes very well.
+4. Composes well enough to implement an SSR framework like fresh as well as an
+   autodocumenting api framework like oxide comput company's dropshot.
 
 Things that I am willing to give up from existing frameworks:
 
 1. Middleware
+2. Filesystem based routing
+3. A CLI tool for managing the module
+4. The minimal case being a single line server (just use Deno.serve!)
 
 If all goes well this project will be rolling out features in stages. Here are
 the planned features in no particular order.
@@ -21,8 +35,8 @@ the planned features in no particular order.
 * response combinators for rendering jsx, markdown, html, json, etc
 * body decoding combinators for forms, json, etc
 * response streaming for media
-* tools for static site rendering
-* tools for api documentation (openapi)
+* tools for static site rendering, specifically get/post combinations
+* tools for automatic api documentation (openapi)
 * caching combinators based on request, backend, variables, state, etc
 * route and handler generators
 
@@ -50,14 +64,19 @@ generally, the router in pick expects the more specific Handler that looks like:
 type Context<S, V> = {
   readonly request: Request;
   readonly state: S;
-  readonly variables: V;
+  readonly path: V;
 }
 
 type RouteHandler<S, V, O> = Handler<Context<S, V>, Response, O>;
+
+// Or, if we substitute the types ourselves
+type RouteHandlerSub<S, V, O> = (ctx: Context<S, V>) => Promise<[Response, O]>;
 ```
 
-The Router doesn't really care about the output state `O` of the Handler but we
-keep it around in case the user wants to compose Handlers by modifying state.
+The Router in pick doesn't really care about the output state `O` of the Handler
+but we keep it around in case the user wants to compose Handlers by modifying state,
+thus recovering a well typed form of middleware without using `next`.
+
 Lastly, we come to the default type that most users of this library will use. I
 call it a `Responder`, but it is really the non-indexed part of `Handler`
 
@@ -69,8 +88,31 @@ type Responder<D, A> = (d: D) => A | Promise<A>;
 design idea of pick. Start with a sufficiently powerful type for route handling
 that can be trivial "simplified" to a very useful minimal implementation.
 
+Put this all together and a simple router can be set up like so:
+
+```ts
+import * as R from "../router.ts";
+import { html } from "../response.ts";
+import { pipe } from "fun/fn.ts";
+
+const router = pipe(
+  // Create a Router
+  R.router<{ count: number }>(),
+  // Add a Route
+  R.respond(
+    "GET /hello/:name",
+    (ctx) => html(`<h1>Hello ${ctx.path.name}, you are number ${++ctx.state.count}</h1>`),
+  ),
+  R.withState({ count: 0 }),
+);
+
+Deno.serve(router);
+```
+
 
 ## Contributing
 
-Contributions are welcome but this is a young library with a fairly tight goal.
-Until a 1.0.0 release I don't expect that the api will really be settled.
+Contributions are welcome but this is a young library and I expect to muck
+around with it for a good year before I settle the api. Until a 1.0.0
+release I don't expect that the api will really be settled. That said, the basic
+concepts are solid so early contributions are likely to last.

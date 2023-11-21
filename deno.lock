@@ -43,8 +43,17 @@
     "https://deno.land/x/fun@v2.0.0/traversable.ts": "66023d36a33b27afd38148c7647f129ba53353db6ea684ddbff3f2a939dce951",
     "https://deno.land/x/fun@v2.0.0/tree.ts": "43511bd438cf910759f049c2291f3a087338c3ff787262868f83057e7cd0524a",
     "https://deno.land/x/fun@v2.0.0/wrappable.ts": "4017945471058920126f58524c260fafd7c1e32c125564496a0925aea72a555f",
+    "https://deno.land/x/nanoid@v3.0.0/customAlphabet.ts": "1cfd7cfd2f07ca8d78a7e7855fcc9f59abf01ef2a127484ef94328fadf940ead",
+    "https://deno.land/x/nanoid@v3.0.0/customRandom.ts": "af56e19038c891a4b4ef2be931554c27579bd407ee5bbea5cb64f6ee1347cbe3",
+    "https://deno.land/x/nanoid@v3.0.0/mod.ts": "3ead610e40c58d8fdca21d5da9ec661445a2b82526e19c34d05de5f90be8a1be",
+    "https://deno.land/x/nanoid@v3.0.0/nanoid.ts": "8d119bc89a0f34e7bbe0c2dbdc280d01753e431af553d189663492310a31085d",
+    "https://deno.land/x/nanoid@v3.0.0/random.ts": "4da71d5f72f2bfcc6a4ee79b5d4e72f48dcf4fe4c3835fd5ebab08b9f33cd598",
+    "https://deno.land/x/nanoid@v3.0.0/urlAlphabet.ts": "8b1511deb1ecb23c66202b6000dc10fb68f9a96b5550c6c8cef5009324793431",
     "https://esm.sh/preact-render-to-string@6.2.2": "558965f6ed077a5b8b0f63a6ff59d7d560ab18564a9c1facbda10b1e5e3faed6",
+    "https://esm.sh/preact@10.15.1/jsx-runtime": "3a0bc5069478be7860baf79434337edb91c0544b61318077f4c5825baedb32be",
     "https://esm.sh/preact@10.18.1": "94e175027f630c795ee1bde782564f4b9bed98db1e04cc7e07241a02c8d62358",
+    "https://esm.sh/stable/preact@10.15.1/deno/jsx-runtime.js": "a928c89a68606cb31d5b4516535310084f593e7ba34fd71fe61d0bca610b0547",
+    "https://esm.sh/stable/preact@10.15.1/deno/preact.mjs": "be338d88b534f38e846474c5d981f65a35f1ae031bbba11aa3681c501c73134d",
     "https://esm.sh/stable/preact@10.18.1/denonext/preact.mjs": "b2ad171554b90f2be0f30b1318f63d0df90420b2bdb727fddd97193daa177f84",
     "https://esm.sh/v133/preact-render-to-string@6.2.2/denonext/preact-render-to-string.mjs": "805f1890d7aae73bc1b5edadded39d73a2fe31582503506e3e188bd649cb0776"
   }

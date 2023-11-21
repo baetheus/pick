@@ -4,9 +4,11 @@ import * as N from "fun/nil.ts";
 import * as P from "fun/promise.ts";
 import { pipe } from "fun/fn.ts";
 
-import { handle, respond, router, use } from "../router.ts";
+import { append, handle, respond, router, withState } from "../router.ts";
+import { notFound } from "../route.ts";
 import { cacheUrl } from "../cache.ts";
 import { puts } from "../handler.ts";
+import { logRouter } from "../logger.ts";
 import * as R from "../response.ts";
 
 type Deps = {
@@ -63,7 +65,9 @@ const handler = pipe(
       return R.jsx(<h1>Hi {first} {last}, {age}!</h1>);
     },
   ),
-  use({ count: 0, defaultURL }),
+  append(notFound()),
+  logRouter,
+  withState({ count: 0, defaultURL }),
 );
 
 Deno.serve(handler);

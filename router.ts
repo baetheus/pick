@@ -1,9 +1,9 @@
 import type { Context } from "./context.ts";
 import type { PathVars, RouteString } from "./parser.ts";
 import type { Handler } from "./handler.ts";
-import type { Route } from "./route.ts";
+import type { AnyRoute, Route } from "./route.ts";
 
-import { append } from "fun/array.ts";
+import * as A from "fun/array.ts";
 import { isSome } from "fun/option.ts";
 import { pipe } from "fun/fn.ts";
 
@@ -12,11 +12,16 @@ import { routeParser } from "./parser.ts";
 import { route } from "./route.ts";
 import { context } from "./context.ts";
 
-// deno-lint-ignore no-explicit-any
-export type Router<S = unknown> = readonly Route<any, S>[];
+export type Router<S = never> = readonly AnyRoute<S>[];
 
 export function router<S>(): Router<S> {
   return [];
+}
+
+export function append<S>(
+  route: AnyRoute<S>,
+): (router: Router<S>) => Router<S> {
+  return A.append(route);
 }
 
 export function handle<R extends RouteString, S, O>(
@@ -34,11 +39,10 @@ export function respond<R extends RouteString, S>(
   return handle(routeString, puts(handler));
 }
 
-const NotFound = new Response("Not Found", { status: 404 });
+export const NotFound = new Response("Not Found", { status: 404 });
 
-export function use<S>(
+export function withState<S>(
   state: S,
-  notFound: (req: Request) => Response = () => NotFound,
 ): (router: Router<S>) => Deno.ServeHandler {
   return (router) => (request) => {
     for (const { parser, handler } of router) {
@@ -48,7 +52,6 @@ export function use<S>(
         return pipe(handler, evaluate(context(request, state, path.value)));
       }
     }
-    // Default route
-    return notFound(request);
+    return NotFound;
   };
 }

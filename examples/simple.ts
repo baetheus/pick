@@ -3,12 +3,15 @@ import { html } from "../response.ts";
 import { pipe } from "fun/fn.ts";
 
 const handler = pipe(
-  R.router(),
+  R.router<{ count: number }>(),
   R.respond(
     "GET /hello/:name",
-    (ctx) => html(`<h1>Hello ${ctx.variables.name}</h1>`),
+    (ctx) =>
+      html(
+        `<h1>Hello ${ctx.path.name}, you are number ${++ctx.state.count}</h1>`,
+      ),
   ),
-  R.use(null),
+  R.withState({ count: 0 }),
 );
 
 Deno.serve(handler);

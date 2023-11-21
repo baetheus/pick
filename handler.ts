@@ -27,6 +27,12 @@ export function wrap<A, D = unknown>(a: A | Promise<A>): Handler<D, A, D> {
   return async (d) => [await a, d];
 }
 
+export function premap<L, D>(
+  fld: (l: L) => D,
+): <A, B>(ua: Handler<D, A, B>) => Handler<L, A, B> {
+  return (ua) => (l) => ua(fld(l));
+}
+
 export function map<A, I>(
   fai: (a: A) => I | Promise<I>,
 ): <S1, S2>(ua: Handler<S1, A, S2>) => Handler<S1, I, S2> {

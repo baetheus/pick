@@ -11,7 +11,7 @@ import * as E from "fun/either.ts";
 import { pipe } from "fun/fn.ts";
 
 export function html(html: string): Response {
-  return new Response(html, {
+  return new Response(`<!DOCTYPE html>${html}`, {
     headers: { "content-type": contentType("html") },
   });
 }

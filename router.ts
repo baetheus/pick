@@ -1,11 +1,11 @@
 import type { Context } from "./context.ts";
 import type { PathVars, RouteString } from "./parser.ts";
 import type { Handler } from "./handler.ts";
-import type { AnyRoute, Route } from "./route.ts";
+import type { AnyRoute } from "./route.ts";
 
-import * as A from "fun/array.ts";
-import { isSome } from "fun/option.ts";
-import { pipe } from "fun/fn.ts";
+import * as A from "fun/array";
+import { isSome } from "fun/option";
+import { pipe } from "fun/fn";
 
 import { evaluate, puts } from "./handler.ts";
 import { routeParser } from "./parser.ts";
@@ -39,7 +39,7 @@ export function respond<R extends RouteString, S>(
   return handle(routeString, puts(handler));
 }
 
-export const NotFound = new Response("Not Found", { status: 404 });
+export const NotFound: Response = new Response("Not Found", { status: 404 });
 
 export function withState<S>(
   state: S,

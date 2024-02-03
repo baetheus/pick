@@ -1,22 +1,47 @@
-import type { Option } from "fun/option.ts";
+import type { Option } from "fun/option";
 
-import { fromNullable, map, none } from "fun/option.ts";
-import { pipe } from "fun/fn.ts";
+import { fromNullable, map, none } from "fun/option";
+import { pipe } from "fun/fn";
 
 type Rec<Key extends string | symbol = string, Value = string> = {
   readonly [K in Key]: Value;
 };
 
 export type HttpVerbs =
+  | "ACL"
+  | "BIND"
+  | "CHECKOUT"
+  | "CONNECT"
+  | "COPY"
+  | "DELETE"
   | "GET"
   | "HEAD"
-  | "POST"
-  | "PUT"
-  | "DELETE"
-  | "CONNECT"
+  | "LINK"
+  | "LOCK"
+  | "M-SEARCH"
+  | "MERGE"
+  | "MKACTIVITY"
+  | "MKCALENDAR"
+  | "MKCOL"
+  | "MOVE"
+  | "NOTIFY"
   | "OPTIONS"
+  | "PATCH"
+  | "POST"
+  | "PROPFIND"
+  | "PROPPATCH"
+  | "PURGE"
+  | "PUT"
+  | "REBIND"
+  | "REPORT"
+  | "SEARCH"
+  | "SOURCE"
+  | "SUBSCRIBE"
   | "TRACE"
-  | "PATCH";
+  | "UNBIND"
+  | "UNLINK"
+  | "UNLOCK"
+  | "UNSUBSCRIBE";
 
 export const Wildcards = Symbol("Wildcards");
 export type Wildcards = typeof Wildcards;

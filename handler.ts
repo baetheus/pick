@@ -1,10 +1,10 @@
-import type { Kind, Out } from "fun/kind.ts";
-import type { Flatmappable } from "fun/flatmappable.ts";
+import type { Kind, Out } from "fun/kind";
+import type { Flatmappable } from "fun/flatmappable";
 
-import * as P from "fun/promise.ts";
-import { pipe } from "fun/fn.ts";
+import * as P from "fun/promise";
+import { pipe } from "fun/fn";
 
-export type Handler<D, A, B = D> = (d: D) => Promise<[A, B]>;
+export type Handler<D, A, B> = (d: D) => Promise<[A, B]>;
 
 export interface KindHandler<S> extends Kind {
   readonly kind: Handler<S, Out<this, 0>, S>;
@@ -77,7 +77,7 @@ export function get<S>(): Handler<S, S, S> {
   return (s) => Promise.resolve([s, s]);
 }
 
-export function put<S>(s: S): Handler<S, void> {
+export function put<S>(s: S): Handler<S, void, S> {
   return () => Promise.resolve([undefined, s]);
 }
 

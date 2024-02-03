@@ -1,11 +1,11 @@
-import type { Comparable } from "fun/comparable.ts";
+import type { Comparable } from "fun/comparable";
 import type { Handler } from "./handler.ts";
 import type { Context } from "./context.ts";
 
-import * as C from "fun/comparable.ts";
-import { lookup } from "fun/map.ts";
-import { isNone } from "fun/option.ts";
-import { pipe } from "fun/fn.ts";
+import * as C from "fun/comparable";
+import { lookup } from "fun/map";
+import { isNone } from "fun/option";
+import { pipe } from "fun/fn";
 
 export function simpleCache<S>(
   C: Comparable<S>,

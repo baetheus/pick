@@ -1,10 +1,10 @@
-import type { Option } from "fun/option.ts";
+import type { Option } from "fun/option";
 
 import type { Context } from "./context.ts";
 import type { Handler } from "./handler.ts";
 import type { RouteParser, RouteString } from "./parser.ts";
 
-import { some } from "fun/option.ts";
+import { some } from "fun/option";
 
 export type Route<V, S> = {
   readonly route: RouteString;

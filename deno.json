@@ -1,11 +1,35 @@
 {
+  "name": "@baetheus/pick",
+  "version": "0.0.5",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },
+  "exports": {
+    "./cache": "./cache.ts",
+    "./context": "./context.ts",
+    "./endpoint": "./endpoint.ts",
+    "./handler": "./handler.ts",
+    "./logger": "./logger.ts",
+    "./parser": "./parser.ts",
+    "./response": "./response.ts",
+    "./route": "./route.ts",
+    "./router": "./router.ts"
+  },
   "imports": {
-    "fun/": "https://deno.land/x/fun@v2.0.0/",
-    "preact": "https://esm.sh/preact@10.15.1",
-    "preact/": "https://esm.sh/preact@10.15.1/"
-  }
+    "@jlarky/nanoid": "jsr:@jlarky/nanoid@^0.0.2",
+    "@std/media-types": "jsr:@std/media-types@^0.220.1",
+    "fun": "jsr:@baetheus/fun@^2.1.0",
+    "preact": "npm:preact@10.19.6",
+    "preact-router": "npm:preact-router@4.1.2",
+    "preact-render-to-string": "npm:preact-render-to-string@6.4.0"
+  },
+  "include": [
+    "LICENSE",
+    "README.md",
+    "deno.json"
+  ],
+  "exclude": [
+    "examples/*"
+  ]
 }

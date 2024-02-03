@@ -3,10 +3,10 @@ import type { Context } from "./context.ts";
 import type { Route } from "./route.ts";
 import type { Handler } from "./handler.ts";
 
-import { nanoid } from "https://deno.land/x/nanoid@v3.0.0/mod.ts";
-import * as E from "fun/either.ts";
-import { pipe } from "fun/fn.ts";
-import { map } from "fun/array.ts";
+import { nanoid } from "@jlarky/nanoid";
+import * as E from "fun/either";
+import { pipe } from "fun/fn";
+import { map } from "fun/array";
 
 import { route } from "./route.ts";
 

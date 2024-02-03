@@ -3,12 +3,12 @@
  * Response with pipeable combinators is the goal.
  */
 
-import type { VNode } from "https://esm.sh/preact@10.18.1";
+import type { VNode } from "preact";
 
-import { contentType } from "https://deno.land/std@0.204.0/media_types/content_type.ts";
-import { render } from "https://esm.sh/preact-render-to-string@6.2.2";
-import * as E from "fun/either.ts";
-import { pipe } from "fun/fn.ts";
+import { contentType } from "@std/media-types";
+import { render } from "preact-render-to-string";
+import * as E from "fun/either";
+import { pipe } from "fun/fn";
 
 export function html(html: string): Response {
   return new Response(`<!DOCTYPE html>${html}`, {

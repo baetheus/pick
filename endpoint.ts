@@ -1,8 +1,6 @@
-import type { Schema } from "fun/schemable.ts";
-import type { Handler } from "./handler.ts";
-import type { RouteString } from "./parser.ts";
+import type { Schema } from "fun/schemable";
 
-import * as H from "./handler.ts";
+import type { RouteString } from "./parser.ts";
 
 export type Endpoint<R extends RouteString, I, O> = {
   readonly route: R;

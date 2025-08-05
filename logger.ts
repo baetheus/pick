@@ -3,58 +3,92 @@ import type { Context } from "./context.ts";
 import type { Route } from "./route.ts";
 import type { Handler } from "./handler.ts";
 
-import { nanoid } from "@jlarky/nanoid";
-import * as E from "fun/either";
 import { pipe } from "fun/fn";
 import { map } from "fun/array";
 
 import { route } from "./route.ts";
 
-const stringify = E.tryCatch(JSON.stringify, String);
-const tryLog = (data: unknown): void =>
-  pipe(
-    stringify(data),
-    E.match(
-      (err) =>
-        console.error({
-          timestamp: Date.now(),
-          msg: "Unable to log data",
-          err,
-        }),
-      console.log,
-    ),
-  );
+export type LogRequest = {
+  readonly id: string;
+  readonly startTime: number;
+  readonly context: Context;
+};
 
-export function logHandler<S, V, O>(
+export type LogResponse = {
+  readonly id: string;
+  readonly startTime: number;
+  readonly endTime: number;
+  readonly deltaTime: number;
+  readonly response: Response;
+  readonly context: Context;
+  readonly output: unknown;
+};
+
+function nanoid(
+  size = 12,
+  dictionary = "useandom26T198340PX75pxJACKVERYMINDBUSHWOLFGQZbfghjklqvwyzrict",
+) {
+  let id = "";
+  const random = crypto.getRandomValues(new Uint8Array(size));
+  for (let n = 0; n < size; n++) {
+    id += dictionary[61 & random[n]];
+  }
+  return id;
+}
+
+export function defaultRequestLogger(
+  { id, startTime, context: { request: { url, method } } }: LogRequest,
+): void {
+  console.log(`[${startTime}][${id}] ${method} ${url}`);
+}
+
+export function defaultResponseLogger(
+  { id, endTime, deltaTime, response: { status } }: LogResponse,
+): void {
+  console.log(`[${endTime}][${id}] ${status} in ${deltaTime}ms`);
+}
+
+export function createLogHandler(
+  onRequest: (req: LogRequest) => void = defaultRequestLogger,
+  onResponse: (res: LogResponse) => void = defaultResponseLogger,
+): <S, V, O>(
   handler: Handler<Context<S, V>, Response, O>,
-): Handler<Context<S, V>, Response, O> {
-  return async (ctx) => {
-    const start = Date.now();
+) => Handler<Context<S, V>, Response, O> {
+  return (handler) => async (context) => {
     const id = nanoid();
-    const { request, state, path } = ctx;
-    const { method, url } = request;
-    tryLog({ id, timestamp: start, method, url, state, path });
+    const startTime = Date.now();
+    onRequest({ id, startTime, context });
 
-    const output = await handler(ctx);
+    const result = await handler(context);
 
-    const [response] = output;
-    const { status } = response;
-    const end = Date.now();
-    const responseTime = end - start;
-    tryLog({
+    const endTime = Date.now();
+    const deltaTime = endTime - startTime;
+    const [response, output] = result;
+    onResponse({
       id,
-      timestamp: end,
-      responseTime,
-      status,
+      startTime,
+      endTime,
+      deltaTime,
+      response,
+      context,
+      output,
     });
-    return output;
+    return result;
   };
 }
 
-export function logRoute<S, V>(r: Route<V, S>): Route<V, S> {
-  return route(r.route, r.parser, logHandler(r.handler));
+export function createLogRoute(
+  onRequest: (req: LogRequest) => void = defaultRequestLogger,
+  onResponse: (res: LogResponse) => void = defaultResponseLogger,
+): <S, V>(r: Route<V, S>) => Route<V, S> {
+  const logHandler = createLogHandler(onRequest, onResponse);
+  return (r) => route(r.route, r.parser, logHandler(r.handler));
 }
 
-export function logRouter<S>(router: Router<S>): Router<S> {
-  return pipe(router, map(logRoute));
+export function createLogRouter(
+  onRequest: (req: LogRequest) => void = defaultRequestLogger,
+  onResponse: (res: LogResponse) => void = defaultResponseLogger,
+): <S>(router: Router<S>) => Router<S> {
+  const logRoute = createLogRoute(onRequest, onResponse);
+  return (router) => pipe(router, map(logRoute));
 }

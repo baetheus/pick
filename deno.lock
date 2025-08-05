@@ -1,51 +1,49 @@
 {
-  "version": "3",
-  "packages": {
-    "specifiers": {
-      "jsr:@baetheus/fun@^2.1.0": "jsr:@baetheus/fun@2.1.0",
-      "jsr:@jlarky/nanoid@^0.0.2": "jsr:@jlarky/nanoid@0.0.2",
-      "jsr:@std/media-types@^0.220.1": "jsr:@std/media-types@0.220.1",
-      "npm:preact-render-to-string@6.4.0": "npm:preact-render-to-string@6.4.0_preact@10.19.6",
-      "npm:preact@10.19.6": "npm:preact@10.19.6"
+  "version": "4",
+  "specifiers": {
+    "jsr:@baetheus/fun@^2.3.0": "2.3.0",
+    "jsr:@jlarky/nanoid@^0.0.2": "0.0.2",
+    "jsr:@std/media-types@^1.1.0": "1.1.0",
+    "npm:preact-render-to-string@6.5.13": "6.5.13_preact@10.27.0",
+    "npm:preact-router@4.1.2": "4.1.2_preact@10.27.0",
+    "npm:preact@10.27.0": "10.27.0"
+  },
+  "jsr": {
+    "@baetheus/fun@2.3.0": {
+      "integrity": "84d6c03184b34e3ab8e74470649f6093c36aa420880d448acece716822432bd5"
     },
-    "jsr": {
-      "@baetheus/fun@2.1.0": {
-        "integrity": "ca5f0b31b7857dc751eaf913d6afb278c2f95845c5a2feef53b1873575408f3d"
-      },
-      "@jlarky/nanoid@0.0.2": {
-        "integrity": "6246747f6f43f4ec7a2f39b0bf77411a55be5d57c97e212d91486b55f3bc3a12"
-      },
-      "@std/media-types@0.220.1": {
-        "integrity": "9dea30f7e0c87426ad8736678137ad277f1450f858efa1ef2c3aad6d9029b682"
-      }
+    "@jlarky/nanoid@0.0.2": {
+      "integrity": "6246747f6f43f4ec7a2f39b0bf77411a55be5d57c97e212d91486b55f3bc3a12"
     },
-    "npm": {
-      "preact-render-to-string@6.4.0_preact@10.19.6": {
-        "integrity": "sha512-pzDwezZaLbK371OiJjXDsZJwVOALzFX5M1wEh2Kr0pEApq5AV6bRH/DFbA/zNA7Lck/duyREPQLLvzu2G6hEQQ==",
-        "dependencies": {
-          "preact": "preact@10.19.6",
-          "pretty-format": "pretty-format@3.8.0"
-        }
-      },
-      "preact@10.19.6": {
-        "integrity": "sha512-gympg+T2Z1fG1unB8NH29yHJwnEaCH37Z32diPDku316OTnRPeMbiRV9kTrfZpocXjdfnWuFUl/Mj4BHaf6gnw==",
-        "dependencies": {}
-      },
-      "pretty-format@3.8.0": {
-        "integrity": "sha512-WuxUnVtlWL1OfZFQFuqvnvs6MiAGk9UNsBostyBOB0Is9wb5uRESevA6rnl/rkksXaGX3GzZhPup5d6Vp1nFew==",
-        "dependencies": {}
-      }
+    "@std/media-types@1.1.0": {
+      "integrity": "c9d093f0c05c3512932b330e3cc1fe1d627b301db33a4c2c2185c02471d6eaa4"
     }
   },
-  "remote": {},
+  "npm": {
+    "preact-render-to-string@6.5.13_preact@10.27.0": {
+      "integrity": "sha512-iGPd+hKPMFKsfpR2vL4kJ6ZPcFIoWZEcBf0Dpm3zOpdVvj77aY8RlLiQji5OMrngEyaxGogeakTb54uS2FvA6w==",
+      "dependencies": [
+        "preact"
+      ]
+    },
+    "preact-router@4.1.2_preact@10.27.0": {
+      "integrity": "sha512-uICUaUFYh+XQ+6vZtQn1q+X6rSqwq+zorWOCLWPF5FAsQh3EJ+RsDQ9Ee+fjk545YWQHfUxhrBAaemfxEnMOUg==",
+      "dependencies": [
+        "preact"
+      ]
+    },
+    "preact@10.27.0": {
+      "integrity": "sha512-/DTYoB6mwwgPytiqQTh/7SFRL98ZdiD8Sk8zIUVOxtwq4oWcwrcd1uno9fE/zZmUaUrFNYzbH14CPebOz9tZQw=="
+    }
+  },
   "workspace": {
     "dependencies": [
-      "jsr:@baetheus/fun@^2.1.0",
+      "jsr:@baetheus/fun@^2.3.0",
       "jsr:@jlarky/nanoid@^0.0.2",
-      "jsr:@std/media-types@^0.220.1",
-      "npm:preact-render-to-string@6.4.0",
+      "jsr:@std/media-types@^1.1.0",
+      "npm:preact-render-to-string@6.5.13",
       "npm:preact-router@4.1.2",
-      "npm:preact@10.19.6"
+      "npm:preact@10.27.0"
     ]
   }
 }

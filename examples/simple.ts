@@ -1,17 +1,19 @@
+/**
+ * This examply shows a simple use of Router with the `right` combinator to
+ * build a simple text route that has access to path params and mutable state.
+ */
 import * as R from "../router.ts";
-import { html } from "../response.ts";
-import { pipe } from "fun/fn.ts";
 
-const handler = pipe(
-  R.router<{ count: number }>(),
-  R.respond(
-    "GET /hello/:name",
-    (ctx) =>
-      html(
-        `<h1>Hello ${ctx.path.name}, you are number ${++ctx.state.count}</h1>`,
-      ),
-  ),
-  R.withState({ count: 0 }),
+type State = { count: number };
+
+const hello_route = R.right(
+  "GET /hello/:name",
+  (_, { name }, ctx: R.Ctx<State>) =>
+    R.text(`Hello ${name} number ${++ctx.state.count}!`),
 );
 
-Deno.serve(handler);
+const router = R.router<State>(R.context({ count: 0 }), {
+  routes: [hello_route],
+});
+
+Deno.serve(router.handle);

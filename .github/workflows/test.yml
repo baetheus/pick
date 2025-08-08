@@ -1,0 +1,34 @@
+name: Test
+
+on: [workflow_call]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        deno: ["v2.2.12"]
+        os: [macOS-latest, windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v2
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ matrix.deno }}
+
+      - name: Run Deno Tests
+        run: deno test --parallel --coverage=coverage
+
+      - name: Generate Coverage
+        run: deno coverage --unstable ./coverage --lcov > ./coverage/lcov.info
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          flag-name: run-${{ matrix.deno }}-${{ matrix.os }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-path: /

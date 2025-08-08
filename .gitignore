@@ -1,2 +1,4 @@
 /.direnv
 .jj
+.vscode
+tmp

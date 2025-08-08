@@ -58,19 +58,17 @@ generally, the router in pick expects the more specific Handler that looks like:
 
 ```ts
 // Context
-// Request is the web standard HTTP request type
 // S is the application state
-// V is a collection of variables parsed from the request path
-type Context<S, V> = {
-  readonly request: Request;
+type Context<S> = {
   readonly state: S;
-  readonly path: V;
 };
 
-type RouteHandler<S, V, O> = Handler<Context<S, V>, Response, O>;
-
-// Or, if we substitute the types ourselves
-type RouteHandlerSub<S, V, O> = (ctx: Context<S, V>) => Promise<[Response, O]>;
+// A route handler receives the request, parsed path parameters, and context
+type RouteHandler<S, V> = (
+  request: Request,
+  path: V,
+  ctx: Context<S>,
+) => Response | Promise<Response>;
 ```
 
 The Router in pick doesn't really care about the output state `O` of the Handler
@@ -91,25 +89,23 @@ that can be trivial "simplified" to a very useful minimal implementation.
 Put this all together and a simple router can be set up like so:
 
 ```ts
-import * as R from "../router.ts";
-import { html } from "../response.ts";
-import { pipe } from "fun/fn.ts";
+import { context, html, right, router } from "./router.ts";
 
-const router = pipe(
-  // Create a Router
-  R.router<{ count: number }>(),
-  // Add a Route
-  R.respond(
-    "GET /hello/:name",
-    (ctx) =>
-      html(
-        `<h1>Hello ${ctx.path.name}, you are number ${++ctx.state.count}</h1>`,
-      ),
-  ),
-  R.withState({ count: 0 }),
-);
+const ctx = context({ count: 0 });
 
-Deno.serve(router);
+const myRouter = router(ctx, {
+  routes: [
+    right("GET /hello/:name", (request, params, ctx) => {
+      ctx.state.count++;
+      return html(
+        `<h1>Hello ${params.name}, you are visitor number ${ctx.state.count}</h1>`,
+      );
+    }),
+  ],
+});
+
+// Start the server:
+// Deno.serve(myRouter.handle);
 ```
 
 ## Contributing

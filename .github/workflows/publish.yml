@@ -1,0 +1,23 @@
+name: Publish
+
+on: [workflow_call]
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      id-token: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: "v2.2.12"
+
+      - name: Publish package
+        run: deno publish

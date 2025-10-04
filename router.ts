@@ -120,23 +120,6 @@ export function response(
 }
 
 /**
- * A pre-configured ResponseInit object for HTTP 200 OK responses.
- *
- * This constant provides a convenient way to create successful responses
- * without repeatedly calling response_init with STATUS_CODE.OK.
- *
- * @example
- * ```ts
- * import { STATUS_OK, response } from "./router.ts";
- *
- * const successResponse = response("Success!", STATUS_OK);
- * ```
- *
- * @since 0.1.0
- */
-export const STATUS_OK = response_init(STATUS_CODE.OK);
-
-/**
  * Creates an HTML response with the appropriate Content-Type header.
  *
  * This function automatically sets the Content-Type header to "text/html; charset=utf-8"

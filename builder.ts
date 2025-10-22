@@ -3,12 +3,17 @@ import type { Initializable } from "fun/initializable";
 
 import type { Handler, Logger, Methods, Route, RouteString } from "./router.ts";
 
-import * as M from "@std/media-types";
 import * as E from "fun/effect";
 import * as I from "fun/initializable";
+import * as G from "fun/refinement";
+import * as A from "fun/array";
+import * as RR from "fun/record";
+import * as EE from "fun/either";
+import { isRecord } from "fun/refinement";
 import { getInitializableArray } from "fun/array";
 import { none, type Option, some } from "fun/option";
-import { type Either, right } from "fun/either";
+import { type Either, isLeft, left, right } from "fun/either";
+import { flow, pipe } from "fun/fn";
 
 import * as R from "./router.ts";
 
@@ -76,19 +81,19 @@ export function post<D = unknown>(
   return handler("GET", route_handler);
 }
 
-export function fromPartialRoute<D = unknown>(
+export function from_partial_route<D = unknown>(
   pathname: string,
   partial_route: PartialRoute<D>,
 ): Route<D> {
   return R.route(
-    `${partial_route.method}, ${pathname}` as RouteString,
+    `${partial_route.method} /${pathname}` as RouteString,
     partial_route.handler,
   );
 }
 
-export function isPartialRoute<D>(route: unknown): route is PartialRoute<D> {
-  return typeof route !== "object" && Object.hasOwn(route!, "type") &&
-    (route as { type: unknown }).type === PartialRouteSymbol;
+export function is_partial_route<D>(route: unknown): route is PartialRoute<D> {
+  return G.isRecord(route) && Object.hasOwn(route, "type") &&
+    route.type === PartialRouteSymbol;
 }
 
 export type WalkEntry = {
@@ -173,26 +178,10 @@ export type RouteBuilder<D = unknown> = Effect<
   Option<SiteRoutes<D>>
 >;
 
-export const static_builder: RouteBuilder = E.gets(
-  ({ path, name }, { tools: { read, relative }, root_path }) => {
-    const relative_path = relative(root_path, path);
-    const route = static_route(
-      path,
-      R.route(
-        R.route_string("GET", relative_path),
-        E.tryCatch(
-          async () => new Response(await read(path)),
-          () =>
-            R.text(
-              `Unable to read file ${name}.`,
-              R.STATUS_CODE.InternalServerError,
-            ),
-        ),
-      ),
-    );
-    return some(site_routes({ static_routes: [route] }));
-  },
-);
+export type RouteBuilderResult<D> = Either<
+  RouteBuildError,
+  Option<SiteRoutes<D>>
+>;
 
 export type SiteBuilder<D = unknown> = R.Router & {
   readonly site_config: SiteConfig<D>;
@@ -218,6 +207,7 @@ export async function site_builder<D>(
         }
         if (result.right.tag === "Some") {
           routes = combine(routes)(result.right.value);
+          break;
         }
       }
     }
@@ -231,41 +221,87 @@ export async function site_builder<D>(
   return right({ site_config: config, site_routes: routes, handle });
 }
 
-// export function route_builder<D = unknown>(
-//   build: (
-//     entry: WalkEntry,
-//     root_path: string,
-//   ) => SiteRoute<D> | Promise<SiteRoute<D>>,
-//   exts: string[] = [],
-//   skip: string[] = [],
-// ): RouteBuilder<D> {
-//   return { exts, skip, build };
-// }
+export function client_builder<D>(index_file: string): RouteBuilder<D> {
+  return E.gets((e, r) =>
+    some(site_routes({
+      client_routes: [client_route(
+        e.path,
+        R.route(
+          R.route_string("GET", r.tools.relative(r.root_path, e.path)),
+          E.gets(async () => {
+            const file = await Deno.open(index_file, { read: true });
+            return new Response(file.readable);
+          }),
+        ),
+      )],
+    }))
+  );
+}
 
-// export const StaticBuilder = route_builder((e, r) =>
-//   static_route(
-//     e.path,
-//     R.route(
-//       R.route_string("GET", relative(r, e.path)),
-//       E.gets(async () => {
-//         const file = await Deno.open(e.path, { read: true });
-//         return new Response(file.readable);
-//       }),
-//     ),
-//   )
-// );
+export const safe_import = E.tryCatch(
+  async (path: string): Promise<Record<string, unknown>> => {
+    const result = await import(path);
+    if (isRecord(result)) {
+      return result;
+    }
+    throw new Error("Import did not return a record type.");
+  },
+  (error, [path]) =>
+    route_build_error("Unable to import file.", { error, path }),
+);
 
-// export function client_builder(index_file: string): RouteBuilder {
-//   return route_builder((e, r) =>
-//     client_route(
-//       e.path,
-//       R.route(
-//         R.route_string("GET", relative(r, e.path)),
-//         E.gets(async () => {
-//           const file = await Deno.open(index_file, { read: true });
-//           return new Response(file.readable);
-//         }),
-//       ),
-//     )
-//   );
-// }
+export function server_builder<D>(): RouteBuilder<D> {
+  return E.getsEither(
+    async (
+      { path, name },
+      { tools: { relative, extname }, root_path },
+    ) => {
+      if (extname(name) !== ".ts") {
+        return right(none);
+      }
+
+      const relative_path = relative(
+        root_path,
+        path.substring(0, path.length - 3),
+      );
+
+      return pipe(
+        await safe_import(path),
+        ([imports]) => imports,
+        EE.bindTo("imports"),
+        EE.map(flow(
+          RR.entries,
+          A.map(([_, pr]) => pr),
+          A.filter(is_partial_route<D>),
+          A.map((pr) =>
+            server_route(path, from_partial_route(relative_path, pr))
+          ),
+          (server_routes) => some(site_routes({ server_routes })),
+        )),
+      );
+    },
+  );
+}
+
+export function static_builder<D>(): RouteBuilder<D> {
+  return E.gets(
+    ({ path, name }, { tools: { read, relative }, root_path }) => {
+      const relative_path = relative(root_path, path);
+      const route = static_route(
+        path,
+        R.route(
+          R.route_string("GET", relative_path),
+          E.tryCatch(
+            async () => new Response(await read(path)),
+            () =>
+              R.text(
+                `Unable to read file ${name}.`,
+                R.STATUS_CODE.InternalServerError,
+              ),
+          ),
+        ),
+      );
+      return some(site_routes({ static_routes: [route] }));
+    },
+  );
+}

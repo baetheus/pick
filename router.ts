@@ -1203,3 +1203,6 @@ export function router<D>(
     },
   };
 }
+
+const t = Symbol("t");
+export { t };

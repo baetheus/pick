@@ -24,20 +24,25 @@ const extract: (ea: E.Either<Response, Response>) => Response = E.match(
   identity,
   identity,
 );
+const middleware_logger = R.middleware((h) => async (req, p, c) => {
+  const id = nanoid();
+  const { method, url } = req;
+  c.logger.info({ id, method, url });
+  const result = await h(req, p, c);
+  const [eres] = result;
+  const { status, statusText } = extract(eres);
+  c.logger.info({ id, status, statusText });
+  return result;
+});
 
 const site = await B.site_builder({
   root_path: join(import.meta.dirname ?? "/", "/routes"),
-  middlewares: [R.middleware((h) => async (req, p, c) => {
-    const id = nanoid();
-    const { method, url } = req;
-    c.logger.info({ id, method, url });
-    const result = await h(req, p, c);
-    const [eres] = result;
-    const { status, statusText } = extract(eres);
-    c.logger.info({ id, status, statusText });
-    return result;
-  })],
-  builders: [B.static_builder],
+  middlewares: [middleware_logger],
+  builders: [
+    B.server_builder(),
+    B.client_builder("index.html"),
+    B.static_builder(),
+  ],
   tools: {
     logger,
     read: async (r) => (await Deno.open(r, { read: true })).readable,

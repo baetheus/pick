@@ -3,4 +3,4 @@
  * request. I use it to benchmark the maximum number of requests that a Deno
  * webserver can handle on a given host.
  */
-Deno.serve(() => new Response());
+Deno.serve(() => new Response("Hello World"));

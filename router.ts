@@ -4,7 +4,8 @@ import type { Header } from "@std/http/unstable-header";
 
 import * as E from "fun/effect";
 import { match } from "fun/either";
-import { identity } from "fun/fn";
+import { map as mapRecord } from "fun/record";
+import { identity, pipe } from "fun/fn";
 import { HEADER } from "@std/http/unstable-header";
 import { STATUS_CODE, STATUS_TEXT } from "@std/http";
 
@@ -390,41 +391,41 @@ type Rec<Key extends string | symbol = string, Value = string> = {
  *
  * @since 0.1.0
  */
-export const METHODS = [
-  "ACL",
-  "BIND",
-  "CHECKOUT",
-  "CONNECT",
-  "COPY",
-  "DELETE",
-  "GET",
-  "HEAD",
-  "LINK",
-  "LOCK",
-  "MERGE",
-  "MKACTIVITY",
-  "MKCALENDAR",
-  "MKCOL",
-  "MOVE",
-  "NOTIFY",
-  "OPTIONS",
-  "PATCH",
-  "POST",
-  "PROPFIND",
-  "PROPPATCH",
-  "PURGE",
-  "PUT",
-  "REBIND",
-  "REPORT",
-  "SEARCH",
-  "SOURCE",
-  "SUBSCRIBE",
-  "TRACE",
-  "UNBIND",
-  "UNLINK",
-  "UNLOCK",
-  "UNSUBSCRIBE",
-] as const;
+export const METHODS = {
+  "ACL": "ACL",
+  "BIND": "BIND",
+  "CHECKOUT": "CHECKOUT",
+  "CONNECT": "CONNECT",
+  "COPY": "COPY",
+  "DELETE": "DELETE",
+  "GET": "GET",
+  "HEAD": "HEAD",
+  "LINK": "LINK",
+  "LOCK": "LOCK",
+  "MERGE": "MERGE",
+  "MKACTIVITY": "MKACTIVITY",
+  "MKCALENDAR": "MKCALENDAR",
+  "MKCOL": "MKCOL",
+  "MOVE": "MOVE",
+  "NOTIFY": "NOTIFY",
+  "OPTIONS": "OPTIONS",
+  "PATCH": "PATCH",
+  "POST": "POST",
+  "PROPFIND": "PROPFIND",
+  "PROPPATCH": "PROPPATCH",
+  "PURGE": "PURGE",
+  "PUT": "PUT",
+  "REBIND": "REBIND",
+  "REPORT": "REPORT",
+  "SEARCH": "SEARCH",
+  "SOURCE": "SOURCE",
+  "SUBSCRIBE": "SUBSCRIBE",
+  "TRACE": "TRACE",
+  "UNBIND": "UNBIND",
+  "UNLINK": "UNLINK",
+  "UNLOCK": "UNLOCK",
+  "UNSUBSCRIBE": "UNSUBSCRIBE",
+} as const;
 
 /**
  * A type representing all valid HTTP methods supported by the router.
@@ -448,7 +449,7 @@ export const METHODS = [
  *
  * @since 0.1.0
  */
-export type Methods = (typeof METHODS)[number];
+export type Methods = keyof typeof METHODS;
 
 /**
  * Parses a URL path pattern into a structured type representing the path parameters.
@@ -798,10 +799,10 @@ export type AnyRoute = Route<any>;
  * @since 0.1.0
  */
 export function route<D>(
-  route_string: RouteString,
+  method: Methods,
+  pathname: string,
   handler: Handler<D>,
 ): Route<D> {
-  const [method, pathname] = route_string.split(" ") as [Methods, string];
   return {
     method,
     pathname,
@@ -866,9 +867,10 @@ export function right<D, R extends RouteString>(
     ctx: Ctx<D>,
   ) => Response | Promise<Response>,
 ): Route<D> {
-  return route<D>(
-    route_string,
-    // The ParsePath type matches URLPatternResult here
+  const [method, path_name] = route_string.split(" ") as [Methods, string];
+  return route(
+    method,
+    path_name,
     E.gets(handler) as unknown as Handler<D>,
   );
 }
@@ -918,9 +920,10 @@ export function left<D, R extends RouteString = RouteString>(
     ctx: Ctx<D>,
   ) => Response | Promise<Response>,
 ): Route<D> {
-  return route<D>(
-    route_string,
-    // The ParsePath type matches URLPatternResult here
+  const [method, path_name] = route_string.split(" ") as [Methods, string];
+  return route(
+    method,
+    path_name,
     E.getsSecond(handler) as unknown as Handler<D>,
   );
 }
@@ -1039,9 +1042,10 @@ export type Router = {
 const extract_response = match(identity<Response>, identity<Response>);
 
 function create_route_map<D>(): { [K in Methods]: Route<D>[] } {
-  const result = {} as { [K in Methods]: Route<D>[] };
-  METHODS.forEach((m) => result[m] = []);
-  return result;
+  return pipe(
+    METHODS,
+    mapRecord(() => [] as Route<D>[]),
+  ) as { [K in Methods]: Route<D>[] };
 }
 
 export type RouterConfig<D> = {
@@ -1161,7 +1165,7 @@ export function router<D>(
     return { method, pathname, url_pattern, handler: new_handler };
   };
   const default_route = wrap_route(
-    route("GET /*", E.gets(default_handler)),
+    route("GET", "/*", E.gets(default_handler)),
   );
 
   for (const route of routes) {
@@ -1203,6 +1207,3 @@ export function router<D>(
     },
   };
 }
-
-const t = Symbol("t");
-export { t };

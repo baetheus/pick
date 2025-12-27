@@ -7,7 +7,10 @@
   },
   "exports": {
     "./router": "./router.ts",
-    "./builder": "./builder.ts"
+    "./builder": "./builder.ts",
+    "./platforms/deno": "./platforms/deno.ts",
+    "./platforms/node": "./platforms/node.ts",
+    "./platforms/bun": "./platforms/bun.ts"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.15",
@@ -15,11 +18,11 @@
     "@std/http": "jsr:@std/http@^1.0.21",
     "@std/media-types": "jsr:@std/media-types@^1.1.0",
     "@std/path": "jsr:@std/path@^1.1.2",
-    "esbuild": "npm:esbuild@^0.25.11",
-    "fun": "jsr:@baetheus/fun@^3.0.0-rc.4",
+    "esbuild": "npm:esbuild@^0.27.0",
+    "fun": "jsr:@baetheus/fun@^3.0.0-rc.5",
     "preact": "npm:preact@10.27.2",
     "preact-router": "npm:preact-router@4.1.2",
-    "preact-render-to-string": "npm:preact-render-to-string@6.6.2"
+    "preact-render-to-string": "npm:preact-render-to-string@6.6.3"
   },
   "include": [
     "LICENSE",

@@ -1,6 +1,6 @@
 {
   "name": "@baetheus/pick-platforms-deno",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "exports": {
     "./builder": "./builder.ts",
     "./esbuild": "./esbuild.ts"

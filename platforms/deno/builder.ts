@@ -13,7 +13,7 @@ import { basename, dirname, extname, relative } from "@std/path";
 
 import * as O from "fun/option";
 
-import type { BuilderTools, WalkEntry } from "@baetheus/pick//builder";
+import type { BuilderTools, WalkEntry } from "@baetheus/pick/builder";
 import { DEFAULT_LOGGER } from "@baetheus/pick/router";
 import type { Logger } from "@baetheus/pick/router";
 

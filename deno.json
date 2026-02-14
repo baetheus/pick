@@ -16,7 +16,7 @@
   ],
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.15",
-    "fun": "jsr:@baetheus/fun@^3.0.0-rc.5"
+    "fun": "jsr:@baetheus/fun@^3.0.0-rc.6"
   },
   "include": [
     "LICENSE",

@@ -24,7 +24,9 @@ import type { Bundler, BundleResult, OutputFile } from "@baetheus/pick/builder";
  *
  * @since 0.1.0
  */
-export const bundler_error = Err.err("BundlerError");
+export const bundler_error: Err.ErrFactory<"BundlerError"> = Err.err(
+  "BundlerError",
+);
 
 /**
  * Configuration for the esbuild-deno-preact bundler.

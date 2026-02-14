@@ -18,6 +18,14 @@
     "@std/assert": "jsr:@std/assert@^1.0.15",
     "fun": "jsr:@baetheus/fun@^3.0.0-rc.6"
   },
+  "tasks": {
+    "test": "deno test --allow-read --allow-env --allow-run --allow-net"
+  },
+  "test": {
+    "include": [
+      "./testing/**/*.test.ts"
+    ]
+  },
   "include": [
     "LICENSE",
     "README.md",

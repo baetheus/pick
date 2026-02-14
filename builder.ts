@@ -26,6 +26,21 @@ import { pipe } from "fun/fn";
 
 import * as R from "./router.ts";
 
+// #region Type Definitions for Public API
+
+/**
+ * Function type for building partial routes from handlers.
+ * Supports both simple handler form and config form with typed params.
+ *
+ * @since 0.2.0
+ */
+export type MethodBuilder = {
+  <D>(handler: R.Handler<D>): PartialRoute<D>;
+  <P, D>(config: PartialRouteConfig<P, D>): PartialRoute<D>;
+};
+
+// #endregion
+
 const PartialRouteSymbol = "PARTIAL_ROUTE" as const;
 type PartialRouteSymbol = typeof PartialRouteSymbol;
 
@@ -260,7 +275,7 @@ function is_config<P, D>(
  *
  * @since 0.1.0
  */
-function create_method_builder(method: R.Methods) {
+function create_method_builder(method: R.Methods): MethodBuilder {
   function builder<D>(handler: R.Handler<D>): PartialRoute<D>;
   function builder<P, D>(config: PartialRouteConfig<P, D>): PartialRoute<D>;
   function builder<P, D>(
@@ -299,49 +314,49 @@ function create_method_builder(method: R.Methods) {
  *
  * @since 0.1.0
  */
-export const get = create_method_builder("GET");
+export const get: MethodBuilder = create_method_builder("GET");
 
 /**
  * Creates a POST route handler.
  *
  * @since 0.1.0
  */
-export const post = create_method_builder("POST");
+export const post: MethodBuilder = create_method_builder("POST");
 
 /**
  * Creates a PUT route handler.
  *
  * @since 0.1.0
  */
-export const put = create_method_builder("PUT");
+export const put: MethodBuilder = create_method_builder("PUT");
 
 /**
  * Creates a DELETE route handler.
  *
  * @since 0.1.0
  */
-export const delete_ = create_method_builder("DELETE");
+export const delete_: MethodBuilder = create_method_builder("DELETE");
 
 /**
  * Creates a PATCH route handler.
  *
  * @since 0.1.0
  */
-export const patch = create_method_builder("PATCH");
+export const patch: MethodBuilder = create_method_builder("PATCH");
 
 /**
  * Creates a HEAD route handler.
  *
  * @since 0.1.0
  */
-export const head = create_method_builder("HEAD");
+export const head: MethodBuilder = create_method_builder("HEAD");
 
 /**
  * Creates an OPTIONS route handler.
  *
  * @since 0.1.0
  */
-export const options = create_method_builder("OPTIONS");
+export const options: MethodBuilder = create_method_builder("OPTIONS");
 
 /**
  * Marker type for client redirect routes.
@@ -615,28 +630,35 @@ const DEFAULT_CLIENT_EXTENSIONS = [".ts", ".tsx"] as const;
  *
  * @since 0.1.0
  */
-export const route_build_error = Err.err("RouteBuildError");
+export const route_build_error: Err.ErrFactory<"RouteBuildError"> = Err.err(
+  "RouteBuildError",
+);
 
 /**
  * Error type for route conflicts.
  *
  * @since 0.1.0
  */
-export const route_conflict_error = Err.err("RouteConflictError");
+export const route_conflict_error: Err.ErrFactory<"RouteConflictError"> = Err
+  .err("RouteConflictError");
 
 /**
  * Error type for client bundle failures.
  *
  * @since 0.1.0
  */
-export const client_bundle_error = Err.err("ClientBundleError");
+export const client_bundle_error: Err.ErrFactory<"ClientBundleError"> = Err.err(
+  "ClientBundleError",
+);
 
 /**
  * Error type for client root not found.
  *
  * @since 0.1.0
  */
-export const client_root_not_found_error = Err.err("ClientRootNotFoundError");
+export const client_root_not_found_error: Err.ErrFactory<
+  "ClientRootNotFoundError"
+> = Err.err("ClientRootNotFoundError");
 
 // #region Client Build Entries
 
@@ -755,10 +777,16 @@ export function from_partial_route<D = unknown>(
  *
  * @since 0.1.0
  */
-export const safe_import = E.tryCatch(
+export const safe_import: E.Effect<
+  [string],
+  Err.Err<"RouteBuildError", { error: unknown; path: string }>,
+  Record<string, unknown>
+> = E.tryCatch(
   async (path: string): Promise<Record<string, unknown>> => {
+    // Convert absolute path to file:// URL for Deno dynamic import
+    const file_url = path.startsWith("file://") ? path : `file://${path}`;
     // deno-lint-ignore: unanalyzable-dynamic-import
-    const result = await import(path);
+    const result = await import(file_url);
     if (Ref.isRecord(result)) {
       return result;
     }

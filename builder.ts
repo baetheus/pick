@@ -757,6 +757,7 @@ export function from_partial_route<D = unknown>(
  */
 export const safe_import = E.tryCatch(
   async (path: string): Promise<Record<string, unknown>> => {
+    // deno-lint-ignore: unanalyzable-dynamic-import
     const result = await import(path);
     if (Ref.isRecord(result)) {
       return result;

@@ -25,5 +25,8 @@
     "LICENSE",
     "README.md",
     "deno.json"
+  ],
+  "exclude": [
+    "./examples/*"
   ]
 }

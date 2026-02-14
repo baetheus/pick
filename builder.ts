@@ -26,13 +26,13 @@ import { pipe } from "fun/fn";
 
 import * as R from "./router.ts";
 
-const PartialRouteSymbol: unique symbol = Symbol("pick/partial_route");
+const PartialRouteSymbol = "PARTIAL_ROUTE" as const;
 type PartialRouteSymbol = typeof PartialRouteSymbol;
 
-const ClientRedirectSymbol: unique symbol = Symbol("pick/client_redirect");
+const ClientRedirectSymbol = "CLIENT_REDIRECT" as const;
 type ClientRedirectSymbol = typeof ClientRedirectSymbol;
 
-const ClientRootSymbol: unique symbol = Symbol("pick/client_root");
+const ClientRootSymbol = "CLIENT_ROOT" as const;
 type ClientRootSymbol = typeof ClientRootSymbol;
 
 // #region Bundler Interface

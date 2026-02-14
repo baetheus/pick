@@ -21,17 +21,13 @@
   "tasks": {
     "test": "deno test --allow-read --allow-env --allow-run --allow-net"
   },
-  "test": {
-    "include": [
-      "./testing/**/*.test.ts"
-    ]
-  },
   "include": [
     "LICENSE",
     "README.md",
     "deno.json"
   ],
   "exclude": [
-    "./examples/*"
+    "./examples/*",
+    "./testing/*"
   ]
 }

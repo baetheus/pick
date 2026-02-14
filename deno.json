@@ -7,11 +7,7 @@
   },
   "exports": {
     "./router": "./router.ts",
-    "./builder": "./builder.ts",
-    "./bundlers/esbuild-deno-preact": "./bundlers/esbuild-deno-preact.ts",
-    "./platforms/deno": "./platforms/deno.ts",
-    "./platforms/node": "./platforms/node.ts",
-    "./platforms/bun": "./platforms/bun.ts"
+    "./builder": "./builder.ts"
   },
   "workspace": [
     "./platforms/deno",

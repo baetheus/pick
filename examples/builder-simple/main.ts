@@ -1,16 +1,3 @@
-/**
- * Example site using the directory-based router builder.
- *
- * This demonstrates:
- * - Server routes with typed params via schemas
- * - Static file serving
- * - Client SPA with bundling
- * - Middleware integration
- * - Custom state passed to handlers
- *
- * Run with: deno run --allow-net --allow-read --allow-env --allow-run main.ts
- */
-
 import { pipe } from "fun/fn";
 import * as Either from "fun/either";
 
@@ -19,18 +6,10 @@ import * as R from "../../router.ts";
 import { deno_tools } from "../../platforms/deno.ts";
 import { esbuild_deno_preact } from "../../bundlers/esbuild-deno-preact.ts";
 
-// Application state shared across all routes
-type AppState = {
-  readonly start_time: number;
-  readonly request_count: { value: number };
-};
-
 // Logging middleware
-const logging_middleware = R.middleware<AppState>((handler) => {
+const logging_middleware = R.middleware((handler) => {
   return async (req, pattern, ctx) => {
     const start = performance.now();
-    ctx.state.request_count.value++;
-
     ctx.logger.info(`--> ${req.method} ${new URL(req.url).pathname}`);
 
     const result = await handler(req, pattern, ctx);
@@ -50,21 +29,15 @@ const logging_middleware = R.middleware<AppState>((handler) => {
 
 // Build and serve the site
 async function main() {
-  const state: AppState = {
-    start_time: Date.now(),
-    request_count: { value: 0 },
-  };
-
   const result = await B.build_site({
     root_path: new URL("./routes", import.meta.url).pathname,
     tools: deno_tools(),
-    state,
+    state: null,
     middlewares: [logging_middleware],
     server_extensions: [".ts"],
     bundler: esbuild_deno_preact({
-      minify: true,
-      splitting: true,
-      sourcemap: true,
+      minify: true, // Disable minification for development
+      sourcemap: "inline", // Include source maps for debugging
     }),
   });
 

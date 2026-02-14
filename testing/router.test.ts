@@ -98,7 +98,8 @@ Deno.test("context returns state and default logger", () => {
 
 Deno.test("route parses method, pathname and builds URLPattern", () => {
   const r = R.route(
-    "GET /users/:id",
+    "GET",
+    "/users/:id",
     (() => undefined) as unknown as R.Handler<unknown>,
   );
   assertEquals(r.method, "GET");

@@ -1,6 +1,6 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.1.0",
+  "version": "0.2.0-rc.0",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
@@ -8,17 +8,14 @@
   "exports": {
     "./router": "./router.ts",
     "./builder": "./builder.ts",
+    "./bundlers/esbuild-deno-preact": "./bundlers/esbuild-deno-preact.ts",
     "./platforms/deno": "./platforms/deno.ts",
     "./platforms/node": "./platforms/node.ts",
     "./platforms/bun": "./platforms/bun.ts"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.15",
-    "@std/fs": "jsr:@std/fs@^1.0.19",
-    "@std/http": "jsr:@std/http@^1.0.21",
-    "@std/media-types": "jsr:@std/media-types@^1.1.0",
-    "@std/path": "jsr:@std/path@^1.1.2",
-    "esbuild": "npm:esbuild@^0.27.0",
+    "@std/http": "jsr:@std/http@^1.0.24",
     "fun": "jsr:@baetheus/fun@^3.0.0-rc.5",
     "preact": "npm:preact@10.27.2",
     "preact-router": "npm:preact-router@4.1.2",

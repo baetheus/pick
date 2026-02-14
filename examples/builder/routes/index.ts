@@ -30,12 +30,18 @@ export const get = B.get<AppState>(
   <p>Server uptime: ${uptime} seconds</p>
   <p>Total requests: ${ctx.state.request_count.value}</p>
 
-  <h2>Available Routes</h2>
+  <h2>Server Routes</h2>
   <ul>
     <li><a href="/">GET /</a> - This page</li>
     <li><a href="/api/users">GET /api/users</a> - List users</li>
     <li><a href="/api/users/1">GET /api/users/:id</a> - Get user by ID</li>
     <li><a href="/health">GET /health</a> - Health check</li>
+  </ul>
+
+  <h2>Client SPA</h2>
+  <ul>
+    <li><a href="/app/client">GET /app/client</a> - Preact SPA (bundled with esbuild)</li>
+    <li><a href="/app/settings">GET /app/settings</a> - Settings page (client redirect)</li>
   </ul>
 
   <script src="/public/script.js"></script>

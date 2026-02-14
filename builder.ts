@@ -35,6 +35,56 @@ type ClientRedirectSymbol = typeof ClientRedirectSymbol;
 const ClientRootSymbol: unique symbol = Symbol("pick/client_root");
 type ClientRootSymbol = typeof ClientRootSymbol;
 
+// #region Bundler Interface
+
+/**
+ * Represents an output file from the bundler.
+ *
+ * @since 0.1.0
+ */
+export type OutputFile = {
+  readonly path: string;
+  readonly contents: Uint8Array;
+};
+
+/**
+ * Result of a bundle operation.
+ *
+ * @since 0.1.0
+ */
+export type BundleResult = {
+  readonly files: readonly OutputFile[];
+};
+
+/**
+ * Bundler function type that takes an entrypoint and returns bundled files.
+ *
+ * @since 0.1.0
+ */
+export type Bundler = (
+  entrypoint: string,
+) => Promise<Either.Either<Err.AnyErr, BundleResult>>;
+
+/**
+ * Configuration passed to the client index creator function.
+ *
+ * @since 0.1.0
+ */
+export type ClientIndexConfig = {
+  readonly scripts: readonly string[];
+  readonly styles: readonly string[];
+  readonly baseUrl: string;
+};
+
+/**
+ * Function type for creating the HTML index for a client root.
+ *
+ * @since 0.1.0
+ */
+export type ClientIndexCreator = (config: ClientIndexConfig) => string;
+
+// #endregion
+
 /**
  * Represents a file entry returned by the directory walker.
  *
@@ -295,28 +345,30 @@ export const options = create_method_builder("OPTIONS");
 
 /**
  * Marker type for client redirect routes.
- * Files with this as default export serve the SPA index.html.
+ * Files with this as default export redirect to a specific client root.
  *
  * @since 0.1.0
  */
 export type ClientRedirect = {
   readonly type: ClientRedirectSymbol;
+  readonly target: ClientRoot;
 };
 
 /**
- * Singleton client redirect marker.
+ * Creates a client redirect that points to a specific client root.
  *
  * @example
  * ```ts
  * // In a client route file
- * export default client_redirect;
+ * import clientRoot from "./client.tsx";
+ * export default client_redirect(clientRoot);
  * ```
  *
  * @since 0.1.0
  */
-export const client_redirect: ClientRedirect = {
-  type: ClientRedirectSymbol,
-};
+export function client_redirect(target: ClientRoot): ClientRedirect {
+  return { type: ClientRedirectSymbol, target };
+}
 
 /**
  * Type guard for ClientRedirect.
@@ -336,22 +388,39 @@ export function is_client_redirect(value: unknown): value is ClientRedirect {
  */
 export type ClientRoot = {
   readonly type: ClientRootSymbol;
-  readonly component: unknown;
+  readonly createIndex: ClientIndexCreator;
 };
 
 /**
  * Creates a client root marker for SPA entry points.
  *
  * @example
- * ```ts
- * // In client.tsx
- * export const client = client_root(<App />);
+ * ```tsx
+ * // In client.tsx (must be default export)
+ * export default client_root(({ scripts, styles, baseUrl }) => `
+ * <!DOCTYPE html>
+ * <html>
+ * <head>
+ *   <base href="${baseUrl}">
+ *   ${styles.map(s => `<link rel="stylesheet" href="${s}">`).join("")}
+ * </head>
+ * <body>
+ *   <div id="app"></div>
+ *   ${scripts.map(s => `<script type="module" src="${s}"></script>`).join("")}
+ * </body>
+ * </html>
+ * `);
+ *
+ * // Client-side code (bundled by esbuild)
+ * if (typeof document !== "undefined") {
+ *   render(<App />, document.getElementById("app")!);
+ * }
  * ```
  *
  * @since 0.1.0
  */
-export function client_root(component: unknown): ClientRoot {
-  return { type: ClientRootSymbol, component };
+export function client_root(createIndex: ClientIndexCreator): ClientRoot {
+  return { type: ClientRootSymbol, createIndex };
 }
 
 /**
@@ -535,7 +604,7 @@ export type SiteConfig<D = unknown> = {
   readonly server_extensions?: readonly string[];
   readonly client_extensions?: readonly string[];
   readonly static_ignore?: readonly string[];
-  readonly index_html_path?: string;
+  readonly bundler?: Bundler;
 };
 
 const DEFAULT_SERVER_EXTENSIONS = [".ts"] as const;
@@ -554,6 +623,61 @@ export const route_build_error = Err.err("RouteBuildError");
  * @since 0.1.0
  */
 export const route_conflict_error = Err.err("RouteConflictError");
+
+/**
+ * Error type for client bundle failures.
+ *
+ * @since 0.1.0
+ */
+export const client_bundle_error = Err.err("ClientBundleError");
+
+/**
+ * Error type for client root not found.
+ *
+ * @since 0.1.0
+ */
+export const client_root_not_found_error = Err.err("ClientRootNotFoundError");
+
+// #region Client Build Entries
+
+/**
+ * Entry representing a detected client root during directory walk.
+ *
+ * @since 0.1.0
+ */
+export type ClientRootEntry = {
+  readonly absolute_path: string;
+  readonly relative_path: string;
+  readonly pathname: string;
+  readonly client_root: ClientRoot;
+};
+
+/**
+ * Entry representing a detected client redirect during directory walk.
+ *
+ * @since 0.1.0
+ */
+export type ClientRedirectEntry = {
+  readonly absolute_path: string;
+  readonly pathname: string;
+  readonly target: ClientRoot;
+};
+
+/**
+ * Map of client roots keyed by their ClientRoot reference.
+ *
+ * @since 0.1.0
+ */
+type ClientRootMap = Map<ClientRoot, ClientRootEntry>;
+
+/**
+ * Map of generated HTML content keyed by ClientRoot reference.
+ *
+ * @since 0.1.0
+ */
+type ClientHtmlMap = Map<ClientRoot, string>;
+
+// #endregion
 
 // #endregion
 
@@ -746,127 +870,254 @@ export function build_static_routes<D>(
 }
 
 /**
- * Creates a handler that serves index.html from the given path.
+ * Creates a handler that serves pre-generated HTML content.
  *
  * @since 0.1.0
  */
-function create_index_html_handler<D>(
-  config: SiteConfig<D>,
-  index_html_path: string,
-): R.Handler<D> {
-  return E.tryCatch(
-    async () => {
-      const stream = await config.tools.read_stream(index_html_path);
-      return new Response(stream, {
-        headers: [["Content-Type", "text/html; charset=utf-8"]],
-      });
-    },
-    () =>
-      R.text(
-        "Unable to serve index.html",
-        R.STATUS_CODE.InternalServerError,
-      ),
+function create_html_handler<D>(html_content: string): R.Handler<D> {
+  return E.gets(() =>
+    new Response(html_content, {
+      headers: [["Content-Type", "text/html; charset=utf-8"]],
+    })
   );
 }
 
 /**
- * Builds client routes from a file entry.
- *
- * When a client_root is exported from an index.ts file, this creates
- * routes for both `/` and `/index.html` to serve the SPA.
+ * Creates a handler that serves bundled asset content with caching headers.
  *
  * @since 0.1.0
  */
-export function build_client_routes<D>(
+function create_asset_handler<D>(
+  contents: Uint8Array,
+  mime_type: O.Option<string>,
+): R.Handler<D> {
+  const decoder = new TextDecoder();
+  const asset = decoder.decode(contents);
+  return E.gets(() => {
+    const headers: [string, string][] = [];
+    pipe(
+      mime_type,
+      O.match(
+        () => {},
+        (mime) => {
+          headers.push(["Content-Type", mime]);
+        },
+      ),
+    );
+    // Immutable caching enabled because content hash changes when file changes
+    headers.push(["Cache-Control", "public, max-age=31536000, immutable"]);
+    return new Response(asset, { headers });
+  });
+}
+
+/**
+ * Detects client root or redirect from a file entry during directory walk.
+ *
+ * @since 0.1.0
+ */
+export async function detect_client_entry<D>(
   entry: FileEntry,
   config: SiteConfig<D>,
-  index_html_path: string,
-): E.Effect<[], Err.AnyErr, O.Option<SiteRoutes<D>>> {
+): Promise<
+  Either.Either<
+    Err.AnyErr,
+    O.Option<
+      { type: "root"; entry: ClientRootEntry } | {
+        type: "redirect";
+        entry: ClientRedirectEntry;
+      }
+    >
+  >
+> {
   const extensions = config.client_extensions ?? DEFAULT_CLIENT_EXTENSIONS;
 
-  return E.getsEither(async () => {
-    // Check extension
-    if (!extensions.includes(entry.extension)) {
-      return Either.right(O.none);
-    }
+  // Check extension
+  if (!extensions.includes(entry.extension)) {
+    return Either.right(O.none);
+  }
 
-    // Import the module
-    const import_result = await safe_import(entry.absolute_path);
-    const [either_exports] = import_result;
+  // Import the module
+  const import_result = await safe_import(entry.absolute_path);
+  const [either_exports] = import_result;
 
-    if (either_exports.tag === "Left") {
-      // Not a valid module, skip
-      return Either.right(O.none);
-    }
+  if (either_exports.tag === "Left") {
+    // Not a valid module, skip
+    return Either.right(O.none);
+  }
 
-    const exports = either_exports.right;
+  const exports = either_exports.right;
 
-    // Check for client_root export (SPA entry point)
-    if ("client" in exports && is_client_root(exports.client)) {
-      // Parse pathname
-      const pathname = parse_path(entry.relative_path, extensions);
-      const handler = create_index_html_handler(config, index_html_path);
-      const routes: ClientRoute[] = [];
+  // Check for default export of client_root (SPA entry point)
+  if ("default" in exports && is_client_root(exports.default)) {
+    const pathname = parse_path(entry.relative_path, extensions);
+    return Either.right(
+      O.some({
+        type: "root" as const,
+        entry: {
+          absolute_path: entry.absolute_path,
+          relative_path: entry.relative_path,
+          pathname,
+          client_root: exports.default,
+        },
+      }),
+    );
+  }
 
-      // If this is an index file, create routes for / and /index.html
-      if (entry.filename === "index.ts" || entry.filename === "index.tsx") {
-        // Get the directory path (remove /index from pathname)
-        const dir_path = pathname.endsWith("/index")
-          ? pathname.slice(0, -6) || "/"
-          : pathname;
+  // Check for default export of client_redirect
+  if ("default" in exports && is_client_redirect(exports.default)) {
+    const pathname = parse_path(entry.relative_path, extensions);
+    return Either.right(
+      O.some({
+        type: "redirect" as const,
+        entry: {
+          absolute_path: entry.absolute_path,
+          pathname,
+          target: exports.default.target,
+        },
+      }),
+    );
+  }
 
-        // Route for the directory root
-        routes.push(
-          client_route(
-            entry.absolute_path,
-            R.route("GET", dir_path, handler) as R.Route,
-          ),
-        );
+  return Either.right(O.none);
+}
 
-        // Route for /index.html
-        const index_html_route = dir_path === "/"
-          ? "/index.html"
-          : `${dir_path}/index.html`;
-        routes.push(
-          client_route(
-            entry.absolute_path,
-            R.route("GET", index_html_route, handler) as R.Route,
-          ),
-        );
-      } else {
-        // Non-index client root, just create the single route
-        routes.push(
-          client_route(
-            entry.absolute_path,
-            R.route("GET", pathname, handler) as R.Route,
-          ),
-        );
+/**
+ * Builds client routes after bundling is complete.
+ *
+ * @since 0.1.0
+ */
+export async function build_client_routes_from_bundle<D>(
+  client_root_entry: ClientRootEntry,
+  bundle_result: BundleResult,
+  tools: BuilderTools,
+): Promise<Either.Either<Err.AnyErr, { routes: SiteRoutes<D>; html: string }>> {
+  try {
+    // Categorize output files into scripts and styles
+    const scripts: string[] = [];
+    const styles: string[] = [];
+    const asset_routes: ClientRoute[] = [];
+
+    for (const file of bundle_result.files) {
+      const ext = tools.extname(file.path);
+      const mime_type = tools.mime_type(ext);
+
+      // Create route for this asset
+      const handler = create_asset_handler<D>(file.contents, mime_type);
+      asset_routes.push(
+        client_route(
+          client_root_entry.absolute_path,
+          R.route("GET", file.path, handler) as R.Route,
+          "client_asset_builder",
+        ),
+      );
+
+      // Categorize for index generation
+      if (ext === ".js" || ext === ".mjs") {
+        scripts.push(file.path);
+      } else if (ext === ".css") {
+        styles.push(file.path);
       }
-
-      return Either.right(O.some(site_routes<D>({ client_routes: routes })));
     }
 
-    // Check for default export of client_redirect
-    if ("default" in exports && is_client_redirect(exports.default)) {
-      // Parse pathname
-      const pathname = parse_path(entry.relative_path, extensions);
-      const handler = create_index_html_handler(config, index_html_path);
+    // Calculate base URL
+    const pathname = client_root_entry.pathname;
+    const baseUrl = pathname.endsWith("/index")
+      ? pathname.slice(0, -6) || "/"
+      : pathname;
 
-      const route = R.route<D>("GET", pathname, handler);
+    // Generate HTML using the client root's createIndex function
+    const html = client_root_entry.client_root.createIndex({
+      scripts,
+      styles,
+      baseUrl,
+    });
 
-      return Either.right(
-        O.some(
-          site_routes<D>({
-            client_routes: [
-              client_route(entry.absolute_path, route as R.Route),
-            ],
-          }),
+    // Create HTML handler
+    const html_handler = create_html_handler<D>(html);
+    const html_routes: ClientRoute[] = [];
+
+    // Determine the routes to create based on filename
+    const filename = tools.basename(client_root_entry.absolute_path);
+    if (
+      filename === "index.ts" ||
+      filename === "index.tsx" ||
+      filename === "client.ts" ||
+      filename === "client.tsx"
+    ) {
+      // Route for the directory root
+      html_routes.push(
+        client_route(
+          client_root_entry.absolute_path,
+          R.route("GET", baseUrl, html_handler) as R.Route,
+        ),
+      );
+
+      // Route for /index.html
+      const index_html_route = baseUrl === "/"
+        ? "/index.html"
+        : `${baseUrl}/index.html`;
+      html_routes.push(
+        client_route(
+          client_root_entry.absolute_path,
+          R.route("GET", index_html_route, html_handler) as R.Route,
+        ),
+      );
+    } else {
+      // Non-index client root, just create the single route
+      html_routes.push(
+        client_route(
+          client_root_entry.absolute_path,
+          R.route("GET", pathname, html_handler) as R.Route,
         ),
       );
     }
 
-    return Either.right(O.none);
-  });
+    return Either.right({
+      routes: site_routes<D>({
+        client_routes: [...asset_routes, ...html_routes],
+      }),
+      html,
+    });
+  } catch (error) {
+    return Either.left(
+      client_bundle_error("Failed to build client routes from bundle", {
+        error,
+        entrypoint: client_root_entry.absolute_path,
+      }),
+    );
+  }
+}
+
+/**
+ * Creates routes for client redirects.
+ *
+ * @since 0.1.0
+ */
+export function build_client_redirect_routes<D>(
+  redirect_entry: ClientRedirectEntry,
+  client_html_map: ClientHtmlMap,
+): Either.Either<Err.AnyErr, SiteRoutes<D>> {
+  const html = client_html_map.get(redirect_entry.target);
+
+  if (html === undefined) {
+    return Either.left(
+      client_root_not_found_error(
+        "Client redirect references a client root that was not found",
+        { redirect_path: redirect_entry.absolute_path },
+      ),
+    );
+  }
+
+  const handler = create_html_handler<D>(html);
+  const route = R.route<D>("GET", redirect_entry.pathname, handler);
+
+  return Either.right(
+    site_routes<D>({
+      client_routes: [
+        client_route(redirect_entry.absolute_path, route as R.Route),
+      ],
+    }),
+  );
 }
 
 /**
@@ -929,11 +1180,13 @@ export type SiteBuilder<D = unknown> = R.Router & {
  * ```ts
  * import * as B from "pick/builder";
  * import { deno_tools } from "pick/platforms/deno";
+ * import { esbuild_deno_preact } from "pick/bundlers/esbuild-deno-preact";
  *
  * const result = await B.build_site({
  *   root_path: "./routes",
  *   tools: deno_tools(),
  *   state: { db: my_database },
+ *   bundler: esbuild_deno_preact(),
  * });
  *
  * if (result.tag === "Right") {
@@ -946,12 +1199,16 @@ export type SiteBuilder<D = unknown> = R.Router & {
 export async function build_site<D>(
   config: SiteConfig<D>,
 ): Promise<Either.Either<Err.AnyErr, SiteBuilder<D>>> {
-  const { root_path, tools, state, middlewares = [] } = config;
+  const { root_path, tools, state, middlewares = [], bundler } = config;
   const { combine } = get_initializable_site_routes<D>();
 
   let routes = site_routes<D>();
 
-  // Walk directory and build routes
+  // Collections for client build phase
+  const client_roots: ClientRootMap = new Map();
+  const client_redirects: ClientRedirectEntry[] = [];
+
+  // Phase 1: Walk directory and build routes
   const entries = tools.walk(root_path);
 
   for await (const entry of entries) {
@@ -982,20 +1239,28 @@ export async function build_site<D>(
       continue; // File handled as server route
     }
 
-    // Then client routes (if index_html_path is configured)
-    if (config.index_html_path) {
-      const client_effect = build_client_routes(
+    // Then check for client roots/redirects (if bundler is configured)
+    if (bundler) {
+      const client_detection = await detect_client_entry(
         file_entry_obj,
         config,
-        config.index_html_path,
       );
-      const [client_result] = await client_effect();
-      if (client_result.tag === "Left") {
-        return client_result;
+      if (client_detection.tag === "Left") {
+        return client_detection;
       }
-      if (client_result.right.tag === "Some") {
-        routes = combine(routes)(client_result.right.value);
-        continue; // File handled as client route
+      if (client_detection.right.tag === "Some") {
+        const detected = client_detection.right.value;
+        if (detected.type === "root") {
+          client_roots.set(detected.entry.client_root, detected.entry);
+          tools.logger.debug("Detected client root", detected.entry.pathname);
+        } else {
+          client_redirects.push(detected.entry);
+          tools.logger.debug(
+            "Detected client redirect",
+            detected.entry.pathname,
+          );
+        }
+        continue; // File handled as client entry
       }
     }
 
@@ -1018,6 +1283,52 @@ export async function build_site<D>(
         routes = combine(routes)(static_result.right.value);
       }
     }
+  }
+
+  // Phase 2: Bundle client roots and create routes
+  const client_html_map: ClientHtmlMap = new Map();
+
+  if (bundler && client_roots.size > 0) {
+    tools.logger.info(`Bundling ${client_roots.size} client root(s)...`);
+
+    for (const [client_root_ref, client_root_entry] of client_roots) {
+      tools.logger.debug("Bundling", client_root_entry.absolute_path);
+
+      // Bundle the client root
+      const bundle_result = await bundler(client_root_entry.absolute_path);
+      if (bundle_result.tag === "Left") {
+        return bundle_result;
+      }
+
+      tools.logger.debug(
+        `Bundle produced ${bundle_result.right.files.length} file(s)`,
+      );
+
+      // Build routes from bundle
+      const client_routes_result = await build_client_routes_from_bundle<D>(
+        client_root_entry,
+        bundle_result.right,
+        tools,
+      );
+      if (client_routes_result.tag === "Left") {
+        return client_routes_result;
+      }
+
+      routes = combine(routes)(client_routes_result.right.routes);
+      client_html_map.set(client_root_ref, client_routes_result.right.html);
+    }
+  }
+
+  // Phase 3: Build client redirect routes
+  for (const redirect_entry of client_redirects) {
+    const redirect_result = build_client_redirect_routes<D>(
+      redirect_entry,
+      client_html_map,
+    );
+    if (redirect_result.tag === "Left") {
+      return redirect_result;
+    }
+    routes = combine(routes)(redirect_result.right);
   }
 
   // Check for conflicts

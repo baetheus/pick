@@ -34,6 +34,9 @@ export const bundler_error: Err.ErrFactory<"BundlerError"> = Err.err(
  * @since 0.1.0
  */
 export type EsbuildDenoPreactConfig = {
+  readonly jsx?: "transform" | "preserve" | "automatic";
+  readonly jsxImportSource?: string;
+  readonly treeShaking?: boolean;
   /** Minify the output (default: true) */
   readonly minify?: boolean;
   /** Generate source maps (default: false) */
@@ -70,9 +73,12 @@ export function esbuild_deno_preact(
 ): Bundler {
   const {
     minify = true,
-    sourcemap = false,
+    treeShaking = true,
+    sourcemap = true,
     splitting = false,
     target = ["es2020"],
+    jsx = "automatic",
+    jsxImportSource = "preact",
     outbase,
     configPath,
   } = config;
@@ -93,14 +99,15 @@ export function esbuild_deno_preact(
         write: false,
         format: "esm",
         platform: "browser",
+        treeShaking,
         minify,
         sourcemap,
         splitting,
         target,
         outbase: outbase ?? entrypointDir,
         outdir: "/", // Virtual output directory
-        jsx: "automatic",
-        jsxImportSource: "preact",
+        jsx,
+        jsxImportSource,
         // Content hash in filenames for cache busting
         entryNames: "[dir]/[name].[hash]",
         chunkNames: "[name].[hash]",

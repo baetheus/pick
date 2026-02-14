@@ -7,15 +7,15 @@
  * @since 0.1.0
  */
 
-import { walk } from "jsr:@std/fs@^1.0.19";
-import { contentType } from "jsr:@std/media-types@^1.1.0";
-import { basename, dirname, extname, relative } from "jsr:@std/path@^1.1.2";
+import { walk } from "@std/fs";
+import { contentType } from "@std/media-types";
+import { basename, dirname, extname, relative } from "@std/path";
 
 import * as O from "fun/option";
 
-import type { BuilderTools, WalkEntry } from "../builder.ts";
-import { DEFAULT_LOGGER } from "../router.ts";
-import type { Logger } from "../router.ts";
+import type { BuilderTools, WalkEntry } from "@baetheus/pick//builder";
+import { DEFAULT_LOGGER } from "@baetheus/pick/router";
+import type { Logger } from "@baetheus/pick/router";
 
 /**
  * Creates BuilderTools for Deno runtime.

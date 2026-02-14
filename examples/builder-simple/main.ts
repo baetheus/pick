@@ -1,10 +1,10 @@
 import { pipe } from "fun/fn";
 import * as Either from "fun/either";
 
-import * as B from "../../builder.ts";
-import * as R from "../../router.ts";
-import { deno_tools } from "../../platforms/deno.ts";
-import { esbuild_deno_preact } from "../../bundlers/esbuild-deno-preact.ts";
+import * as B from "@baetheus/pick/builder";
+import * as R from "@baetheus/pick/router";
+import { deno_tools } from "@baetheus/pick/platforms/deno";
+import { esbuild_deno_preact } from "@baetheus/pick/bundlers/esbuild-deno-preact";
 
 // Logging middleware
 const logging_middleware = R.middleware((handler) => {

@@ -1,13 +1,15 @@
 import type { Effect } from "fun/effect";
-import type { StatusCode, StatusText } from "@std/http";
-import type { Header } from "@std/http/unstable-header";
+
+import type { StatusCode, StatusText } from "./status.ts";
+import type { Header } from "./unstable-header.ts";
 
 import * as E from "fun/effect";
 import { match } from "fun/either";
 import { map as mapRecord } from "fun/record";
 import { identity, pipe } from "fun/fn";
-import { HEADER } from "@std/http/unstable-header";
-import { STATUS_CODE, STATUS_TEXT } from "@std/http";
+
+import { HEADER } from "./unstable-header.ts";
+import { STATUS_CODE, STATUS_TEXT } from "./status.ts";
 
 /**
  * HTTP header constants re-exported from Deno's standard library.

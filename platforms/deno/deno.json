@@ -1,0 +1,15 @@
+{
+  "name": "@baetheus/pick-platforms-deno",
+  "version": "0.2.0-rc.0",
+  "exports": {
+    "./builder": "./builder.ts",
+    "./esbuild": "./esbuild.ts"
+  },
+  "imports": {
+    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.1",
+    "@std/fs": "jsr:@std/fs@^1.0.22",
+    "@std/media-types": "jsr:@std/media-types@^1.1.0",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "esbuild": "npm:esbuild@^0.27.3"
+  }
+}

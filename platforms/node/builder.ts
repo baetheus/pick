@@ -1,49 +1,24 @@
 /**
- * Bun-specific BuilderTools implementation.
+ * Node.js-specific BuilderTools implementation.
  *
- * Provides platform tools for building sites on Bun runtime.
+ * Provides platform tools for building sites on Node.js runtime.
  *
  * @module
  * @since 0.1.0
  */
 
+import { createReadStream } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { basename, dirname, extname, join, relative } from "node:path";
+import { Readable } from "node:stream";
 import * as O from "fun/option";
 
-import type { BuilderTools, WalkEntry } from "../builder.ts";
-import { DEFAULT_LOGGER } from "../router.ts";
-import type { Logger } from "../router.ts";
-
-/**
- * Recursively walks a directory yielding WalkEntry objects.
- *
- * @since 0.1.0
- */
-async function* walk_directory(path: string): AsyncIterable<WalkEntry> {
-  const entries = await readdir(path, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const full_path = join(path, entry.name);
-    const stats = await stat(full_path);
-
-    yield {
-      is_file: stats.isFile(),
-      is_directory: stats.isDirectory(),
-      is_symlink: stats.isSymbolicLink(),
-      name: entry.name,
-      path: full_path,
-    };
-
-    if (stats.isDirectory()) {
-      yield* walk_directory(full_path);
-    }
-  }
-}
+import type { BuilderTools, WalkEntry } from "@baetheus/pick/builder";
+import { DEFAULT_LOGGER } from "@baetheus/pick/router";
+import type { Logger } from "@baetheus/pick/router";
 
 /**
  * Common MIME type mappings for static files.
- * Bun.file() provides mime types, but this is a fallback.
  *
  * @since 0.1.0
  */
@@ -79,34 +54,59 @@ const MIME_TYPES: Record<string, string> = {
   ".wav": "audio/wav",
 };
 
-// Declare Bun global for TypeScript
-declare const Bun: {
-  file(path: string): {
-    stream(): ReadableStream<Uint8Array>;
-    type: string;
-  };
-};
+/**
+ * Recursively walks a directory yielding WalkEntry objects.
+ *
+ * @since 0.1.0
+ */
+async function* walk_directory(path: string): AsyncIterable<WalkEntry> {
+  const entries = await readdir(path, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const full_path = join(path, entry.name);
+    const stats = await stat(full_path);
+
+    yield {
+      is_file: stats.isFile(),
+      is_directory: stats.isDirectory(),
+      is_symlink: stats.isSymbolicLink(),
+      name: entry.name,
+      path: full_path,
+    };
+
+    if (stats.isDirectory()) {
+      yield* walk_directory(full_path);
+    }
+  }
+}
 
 /**
- * Creates BuilderTools for Bun runtime.
+ * Converts a Node.js Readable stream to a Web ReadableStream.
+ *
+ * @since 0.1.0
+ */
+function node_stream_to_web(stream: Readable): ReadableStream<Uint8Array> {
+  return Readable.toWeb(stream) as ReadableStream<Uint8Array>;
+}
+
+/**
+ * Creates BuilderTools for Node.js runtime.
  *
  * @example
  * ```ts
  * import * as B from "pick/builder";
- * import { bun_tools } from "pick/platforms/bun";
+ * import { node_tools } from "pick/platforms/node";
  *
  * const site = await B.build_site({
  *   root_path: "./routes",
- *   tools: bun_tools(),
+ *   tools: node_tools(),
  *   state: {},
  * });
- *
- * Bun.serve({ fetch: site.right.handle });
  * ```
  *
  * @since 0.1.0
  */
-export function bun_tools(logger: Logger = DEFAULT_LOGGER): BuilderTools {
+export function node_tools(logger: Logger = DEFAULT_LOGGER): BuilderTools {
   return {
     logger,
 
@@ -131,9 +131,8 @@ export function bun_tools(logger: Logger = DEFAULT_LOGGER): BuilderTools {
     },
 
     async read_stream(path: string): Promise<ReadableStream<Uint8Array>> {
-      // Bun.file provides optimized file access
-      const file = Bun.file(path);
-      return file.stream();
+      const stream = createReadStream(path);
+      return node_stream_to_web(stream);
     },
 
     mime_type(extension: string): O.Option<string> {

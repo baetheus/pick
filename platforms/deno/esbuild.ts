@@ -12,12 +12,12 @@
  * @since 0.1.0
  */
 
-import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@^0.11.1";
-import * as esbuild from "npm:esbuild@^0.27.0";
+import { denoPlugins } from "@luca/esbuild-deno-loader";
+import * as esbuild from "esbuild";
 import * as Either from "fun/either";
 import * as Err from "fun/err";
 
-import type { Bundler, BundleResult, OutputFile } from "../builder.ts";
+import type { Bundler, BundleResult, OutputFile } from "@baetheus/pick/builder";
 
 /**
  * Error type for bundler failures.

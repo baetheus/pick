@@ -27,5 +27,8 @@
     "LICENSE",
     "README.md",
     "deno.json"
+  ],
+  "exclude": [
+    "./testing/fixtures/*"
   ]
 }

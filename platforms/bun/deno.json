@@ -1,8 +1,0 @@
-{
-  "name": "@baetheus/pick-platforms-bun",
-  "version": "0.2.0",
-  "exports": {
-    "./builder": "./builder.ts"
-  },
-  "imports": {}
-}

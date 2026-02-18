@@ -1,18 +1,15 @@
 /**
- * Test fixture: A client root file.
+ * Test fixture: A client page file.
  */
-import { client_root } from "../../builder.ts";
+import { client_page } from "../../tokens.ts";
 
-export default client_root(({ scripts, styles, baseUrl }) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <base href="${baseUrl}">
-  ${styles.map((s) => `<link rel="stylesheet" href="${s}">`).join("\n  ")}
-</head>
-<body>
-  <div id="app"></div>
-  ${scripts.map((s) => `<script type="module" src="${s}"></script>`).join("\n  ")}
-</body>
-</html>
-`);
+export function Page() {
+  return (
+    <div>
+      <h1>Client Page</h1>
+      <p>This is a test client page.</p>
+    </div>
+  );
+}
+
+export default client_page("Test Client Page", Page);

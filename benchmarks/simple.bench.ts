@@ -19,10 +19,30 @@ const minimal_url = new URL(
   `http://${minimal.addr.hostname}:${minimal.addr.port}`,
 );
 
-Deno.bench("minimal deno server", { group: "simple" }, async () => {
-  await fetch(minimal_url);
-});
+Deno.bench(
+  "Pick Router",
+  { group: "simple" },
+  async () => {
+    let count = 10_000;
+    while (count-- > 0) {
+      await Promise.all([
+        fetch(minimal_url),
+        fetch(minimal_url),
+        fetch(minimal_url),
+        fetch(minimal_url),
+      ]);
+    }
+  },
+);
 
-Deno.bench("simple deno server", { group: "simple" }, async () => {
-  await fetch(simple_url);
+Deno.bench("Deno serve", { group: "simple", baseline: true }, async () => {
+  let count = 10_000;
+  while (count-- > 0) {
+    await Promise.all([
+      fetch(simple_url),
+      fetch(simple_url),
+      fetch(simple_url),
+      fetch(simple_url),
+    ]);
+  }
 });

@@ -1,0 +1,74 @@
+import * as Option from "@baetheus/fun/option";
+import * as Effect from "@baetheus/fun/effect";
+import * as Err from "@baetheus/fun/err";
+import { pipe } from "@baetheus/fun/fn";
+
+import * as Builder from "./builder.ts";
+import * as Router from "./router.ts";
+
+const static_builder_error = Err.err("StaticBuilderError");
+
+export type StaticBuilderOptions = {
+  readonly name: string;
+  readonly middleware: Router.Middleware<unknown>[];
+  readonly exclude_extensions: string[];
+  // Probably could add some cache headers here.
+};
+
+/**
+ * Builds static routes from a file entry.
+ *
+ * @since 0.1.0
+ */
+export function static_builder(
+  {
+    name = "DefaultStaticBuilder",
+    middleware = [],
+    exclude_extensions = [],
+  }: Partial<StaticBuilderOptions> = {},
+): Builder.Builder {
+  return {
+    name,
+    process_build: (routes) => Effect.right(routes),
+    process_file: (file_entry) => {
+      // Bail on excluded extensions
+      if (exclude_extensions.includes(file_entry.parsed_path.ext)) {
+        return Effect.right([]);
+      }
+
+      // Cache headers
+      const headers: HeadersInit = pipe(
+        file_entry.mime_type,
+        Option.match(
+          () => [],
+          (mime) => [["Content-Type", mime]],
+        ),
+      );
+
+      // Create full route
+      // There is maybe room to cache static files here
+      // but the OS does that pretty good already.
+      return Effect.gets((config) => [
+        Builder.full_route(
+          name,
+          file_entry.parsed_path,
+          Router.route(
+            "GET",
+            file_entry.relative_path,
+            Builder.wrap_handler(
+              Effect.tryCatch(async () => {
+                const stream = await config.fs.read(file_entry.parsed_path);
+                return new Response(stream, { headers });
+              }, (error) =>
+                static_builder_error("Unable to read static file", {
+                  file_entry,
+                  error,
+                })),
+              middleware,
+            ),
+          ),
+        ),
+      ]);
+    },
+  };
+}

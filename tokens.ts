@@ -1,24 +1,10 @@
-/**
- * Token types for route markers.
- *
- * This module defines the marker types used by the builder to identify
- * different types of routes. These tokens are kept separate from builder.ts
- * to ensure esbuild can tree-shake builder dependencies from client bundles.
- *
- * @module
- * @since 0.3.0
- */
+import type { ComponentChildren, FunctionComponent } from "preact";
+import type { Schema } from "@baetheus/fun/schemable";
 
-import type { FunctionComponent } from "preact";
-import type { Schema } from "fun/schemable";
-import type { Option } from "fun/option";
-
-import * as O from "fun/option";
-import * as Ref from "fun/refinement";
+import * as Option from "@baetheus/fun/option";
+import * as Refinement from "@baetheus/fun/refinement";
 
 import type { Handler, Methods } from "./router.ts";
-
-// #region PartialRoute Token
 
 const PartialRouteSymbol = "PARTIAL_ROUTE" as const;
 type PartialRouteSymbol = typeof PartialRouteSymbol;
@@ -28,9 +14,9 @@ type PartialRouteSymbol = typeof PartialRouteSymbol;
  *
  * @since 0.1.0
  */
-export type PartialRouteConfig<P, D> = {
+export type PartialRouteConfig<P> = {
   readonly params: Schema<P>;
-  readonly handler: Handler<D>;
+  readonly handler: Handler;
 };
 
 /**
@@ -38,11 +24,11 @@ export type PartialRouteConfig<P, D> = {
  *
  * @since 0.1.0
  */
-export type PartialRoute<D = unknown> = {
+export type PartialRoute = {
   readonly type: PartialRouteSymbol;
   readonly method: Methods;
-  readonly handler: Handler<D>;
-  readonly params_schema: Option<Schema<unknown>>;
+  readonly handler: Handler;
+  readonly params_schema: Option.Option<Schema<unknown>>;
 };
 
 /**
@@ -50,11 +36,11 @@ export type PartialRoute<D = unknown> = {
  *
  * @since 0.1.0
  */
-export function partial_route<D = unknown>(
+export function partial_route(
   method: Methods,
-  handler: Handler<D>,
-  params_schema: Option<Schema<unknown>> = O.none,
-): PartialRoute<D> {
+  handler: Handler,
+  params_schema: Option.Option<Schema<unknown>> = Option.none,
+): PartialRoute {
   return { type: PartialRouteSymbol, method, handler, params_schema };
 }
 
@@ -64,7 +50,7 @@ export function partial_route<D = unknown>(
  * @since 0.1.0
  */
 export function is_partial_route(value: unknown): value is PartialRoute {
-  return Ref.isRecord(value) &&
+  return Refinement.isRecord(value) &&
     "type" in value &&
     value.type === PartialRouteSymbol;
 }
@@ -76,8 +62,8 @@ export function is_partial_route(value: unknown): value is PartialRoute {
  * @since 0.2.0
  */
 export type MethodBuilder = {
-  <D>(handler: Handler<D>): PartialRoute<D>;
-  <P, D>(config: PartialRouteConfig<P, D>): PartialRoute<D>;
+  (handler: Handler): PartialRoute;
+  <P>(config: PartialRouteConfig<P>): PartialRoute;
 };
 
 /**
@@ -85,10 +71,10 @@ export type MethodBuilder = {
  *
  * @since 0.1.0
  */
-function is_config<P, D>(
-  input: Handler<D> | PartialRouteConfig<P, D>,
-): input is PartialRouteConfig<P, D> {
-  return Ref.isRecord(input) && "params" in input && "handler" in input;
+function is_config<P>(
+  input: Handler | PartialRouteConfig<P>,
+): input is PartialRouteConfig<P> {
+  return Refinement.isRecord(input) && "params" in input && "handler" in input;
 }
 
 /**
@@ -101,19 +87,19 @@ function is_config<P, D>(
  * @since 0.1.0
  */
 function create_method_builder(method: Methods): MethodBuilder {
-  function builder<D>(handler: Handler<D>): PartialRoute<D>;
-  function builder<P, D>(config: PartialRouteConfig<P, D>): PartialRoute<D>;
-  function builder<P, D>(
-    input: Handler<D> | PartialRouteConfig<P, D>,
-  ): PartialRoute<D> {
+  function builder(handler: Handler): PartialRoute;
+  function builder<P>(config: PartialRouteConfig<P>): PartialRoute;
+  function builder<P>(
+    input: Handler | PartialRouteConfig<P>,
+  ): PartialRoute {
     if (is_config(input)) {
       return partial_route(
         method,
         input.handler,
-        O.some(input.params as Schema<unknown>),
+        Option.some(input.params as Schema<unknown>),
       );
     }
-    return partial_route(method, input, O.none);
+    return partial_route(method, input, Option.none);
   }
   return builder;
 }
@@ -160,7 +146,7 @@ export const put: MethodBuilder = create_method_builder("PUT");
  *
  * @since 0.1.0
  */
-export const delete_: MethodBuilder = create_method_builder("DELETE");
+export const del: MethodBuilder = create_method_builder("DELETE");
 
 /**
  * Creates a PATCH route handler.
@@ -182,9 +168,6 @@ export const head: MethodBuilder = create_method_builder("HEAD");
  * @since 0.1.0
  */
 export const options: MethodBuilder = create_method_builder("OPTIONS");
-// #endregion
-
-// #region ClientPage Token
 
 const ClientPageSymbol = "CLIENT_PAGE" as const;
 type ClientPageSymbol = typeof ClientPageSymbol;
@@ -195,120 +178,81 @@ type ClientPageSymbol = typeof ClientPageSymbol;
  *
  * @since 0.3.0
  */
-export type ClientPage = {
+type ClientPage<T extends string, P = unknown> = {
   readonly type: ClientPageSymbol;
-  readonly title: string;
-  readonly component: FunctionComponent;
+  readonly tag: T;
+  readonly component: FunctionComponent<P>;
 };
 
-/**
- * Creates a client page marker.
- * The component reference is used with object equality to find the export name.
- *
- * @example
- * ```tsx
- * // routes/dashboard.tsx
- * import { client_page } from "@baetheus/pick/tokens";
- *
- * export function Page() {
- *   return <div>Dashboard</div>;
- * }
- *
- * export default client_page("Dashboard", Page);
- * ```
- *
- * @since 0.3.0
- */
-export function client_page(
-  title: string,
-  component: FunctionComponent,
-): ClientPage {
-  return { type: ClientPageSymbol, title, component };
+type ClientPageFactory<T extends string, P = unknown> = {
+  readonly create: (component: FunctionComponent<P>) => ClientPage<T, P>;
+  readonly refine: (value: unknown) => value is ClientPage<T, P>;
+};
+
+function create_client_page<T extends string, P>(
+  tag: T,
+): ClientPageFactory<T, P> {
+  return {
+    create: (component) => ({
+      type: ClientPageSymbol,
+      tag,
+      component,
+    }),
+    refine: Refinement.struct({
+      type: Refinement.literal(ClientPageSymbol),
+      tag: Refinement.literal(tag),
+      component: (c): c is FunctionComponent<P> => typeof c === "function",
+    }),
+  };
 }
 
 /**
- * Type guard for ClientPage.
- *
- * @since 0.3.0
+ * When a ClientRoute tagged ClientPage is exported from a file it designates to
+ * the client builder that the file should be built into the spa client router.
  */
-export function is_client_page(value: unknown): value is ClientPage {
-  return Ref.isRecord(value) &&
-    "type" in value &&
-    value.type === ClientPageSymbol;
-}
-
-// #endregion
-
-// #region IndexPage Token
-
-const IndexPageSymbol = "INDEX_PAGE" as const;
-type IndexPageSymbol = typeof IndexPageSymbol;
+export const client_route: ClientPageFactory<"ClientRoute"> =
+  create_client_page(
+    "ClientRoute",
+  );
 
 /**
- * Parameters passed to the index page component during HTML generation.
- *
- * @since 0.3.0
+ * When a ClientDefaultRoute tagged ClientPage is exported from a file it
+ * designates that route as the fallback route for the spa client.
  */
-export type IndexPageParameters = {
+export const client_default: ClientPageFactory<"ClientDefaultRoute"> =
+  create_client_page(
+    "ClientDefaultRoute",
+  );
+
+export type ClientIndexParameters = {
   readonly scripts: readonly string[];
   readonly styles: readonly string[];
   readonly title: string;
 };
 
 /**
- * Marker type for the index page HTML shell.
- * The component is rendered to string to generate the HTML document.
- *
- * @since 0.3.0
+ * When a ClientIndex tagged ClientPage is exported from a file it designates to
+ * the client buidler that the file should be used to construct the root
+ * index.html static file and the default / route for the builder application.
  */
-export type IndexPage = {
-  readonly type: IndexPageSymbol;
-  readonly component: FunctionComponent<IndexPageParameters>;
+export const client_index: ClientPageFactory<
+  "ClientIndex",
+  ClientIndexParameters
+> = create_client_page(
+  "ClientIndex",
+);
+
+export type ClientWrapperParameters = {
+  readonly children: ComponentChildren;
 };
 
 /**
- * Creates an index page marker.
- * The component receives script/style paths and renders the HTML shell.
- *
- * @example
- * ```tsx
- * // routes/_index.tsx
- * import { index_page, type IndexPageParameters } from "@baetheus/pick/tokens";
- *
- * function Shell({ scripts, styles, title }: IndexPageParameters) {
- *   return (
- *     <html>
- *       <head>
- *         <title>{title}</title>
- *         {styles.map((href) => <link rel="stylesheet" href={href} />)}
- *       </head>
- *       <body>
- *         {scripts.map((src) => <script type="module" src={src} />)}
- *       </body>
- *     </html>
- *   );
- * }
- *
- * export default index_page(Shell);
- * ```
- *
- * @since 0.3.0
+ * When a ClientWrapper tagged ClientPage is exported from a file it designates
+ * the the constructer spa router should be nested within this component.
  */
-export function index_page(
-  component: FunctionComponent<IndexPageParameters>,
-): IndexPage {
-  return { type: IndexPageSymbol, component };
-}
-
-/**
- * Type guard for IndexPage.
- *
- * @since 0.3.0
- */
-export function is_index_page(value: unknown): value is IndexPage {
-  return Ref.isRecord(value) &&
-    "type" in value &&
-    value.type === IndexPageSymbol;
-}
-
-// #endregion
+export const client_wrapper: ClientPageFactory<
+  "ClientWrapper",
+  ClientWrapperParameters
+> = create_client_page(
+  "ClientWrapper",
+);

@@ -807,7 +807,7 @@ export function route<D>(
 ): Route<D> {
   return {
     method,
-    pathname,
+    pathname: pathname.startsWith("/") ? pathname : `/${pathname}`,
     handler,
     url_pattern: new URLPattern({ pathname }),
   };

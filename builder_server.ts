@@ -7,6 +7,22 @@ import type * as Router from "./router.ts";
 import * as Tokens from "./tokens.ts";
 import * as Builder from "./builder.ts";
 
+/**
+ * Configuration options for the server builder.
+ *
+ * @example
+ * ```ts
+ * import type { ServerBuilderOptions } from "@baetheus/pick/builder_server";
+ *
+ * const options: ServerBuilderOptions = {
+ *   name: "MyServerBuilder",
+ *   middleware: [loggingMiddleware],
+ *   include_extensions: [".ts", ".tsx"],
+ * };
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type ServerBuilderOptions = {
   readonly name: string;
   readonly middleware: Router.Middleware<unknown>[];
@@ -37,6 +53,20 @@ function wrap_partial_route(
 
 /**
  * Builds server routes from a file entry.
+ *
+ * Scans files for exported PartialRoute tokens (created via get, post, etc.)
+ * and converts them into full routes that can be used by the router.
+ *
+ * @example
+ * ```ts
+ * import { server_builder } from "@baetheus/pick/builder_server";
+ *
+ * const builder = server_builder({
+ *   name: "ApiBuilder",
+ *   middleware: [authMiddleware],
+ *   include_extensions: [".ts"],
+ * });
+ * ```
  *
  * @since 0.1.0
  */

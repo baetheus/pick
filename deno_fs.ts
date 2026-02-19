@@ -1,3 +1,13 @@
+/**
+ * Deno-specific filesystem implementation for the builder.
+ *
+ * This module provides a Filesystem implementation using Deno's built-in
+ * file system APIs, suitable for use with the pick builder in Deno environments.
+ *
+ * @module
+ * @since 0.1.0
+ */
+
 import * as Option from "@baetheus/fun/option";
 import * as Arr from "@baetheus/fun/array";
 import { walk } from "@std/fs";
@@ -12,6 +22,27 @@ function get_mime_type(extension: string): Option.Option<string> {
   return pipe(mime, Option.fromNullable);
 }
 
+/**
+ * Deno filesystem implementation for the builder.
+ *
+ * Provides file operations using Deno's standard library functions
+ * for walking directories, reading files, and writing files.
+ *
+ * @example
+ * ```ts
+ * import { deno_fs } from "@baetheus/pick/deno_fs";
+ * import { build } from "@baetheus/pick/builder";
+ *
+ * const result = await build({
+ *   root_path: "./src/routes",
+ *   fs: deno_fs,
+ *   unsafe_import: (path) => import(path),
+ *   builders: [],
+ * });
+ * ```
+ *
+ * @since 0.1.0
+ */
 export const deno_fs: Filesystem = {
   makeTempFile: Deno.makeTempFile,
   walk: async (root) => {

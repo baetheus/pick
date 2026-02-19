@@ -3,11 +3,22 @@
 // This module is generated from {@link https://www.iana.org/assignments/http-fields/http-fields.xhtml#field-names | IANA Hypertext Transfer Protocol (HTTP) Field Name Registry}
 
 /**
- * HTTP Headers with status permanent
+ * HTTP Headers with status permanent from the IANA registry.
  *
  * @experimental **UNSTABLE**: New API, yet to be vetted.
  *
+ * @example
+ * ```ts
+ * import { HEADER } from "@baetheus/pick/unstable-header";
+ *
+ * const headers = new Headers();
+ * headers.set(HEADER.ContentType, "application/json");
+ * headers.set(HEADER.CacheControl, "max-age=3600");
+ * ```
+ *
  * @see {@link https://www.iana.org/assignments/http-fields/http-fields.xhtml#field-names | IANA Hypertext Transfer Protocol (HTTP) Field Name Registry}
+ *
+ * @since 0.1.0
  */
 export const HEADER = {
   /**
@@ -1193,8 +1204,19 @@ export const HEADER = {
 } as const;
 
 /**
- * A HTTP Header
+ * A union type of all HTTP header names from the IANA registry.
  *
  * @experimental **UNSTABLE**: New API, yet to be vetted.
+ *
+ * @example
+ * ```ts
+ * import type { Header } from "@baetheus/pick/unstable-header";
+ *
+ * function setHeader(name: Header, value: string): void {
+ *   console.log(`Setting ${name}: ${value}`);
+ * }
+ * ```
+ *
+ * @since 0.1.0
  */
 export type Header = typeof HEADER[keyof typeof HEADER];

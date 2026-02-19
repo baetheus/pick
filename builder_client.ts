@@ -1,3 +1,13 @@
+/**
+ * Client SPA builder for preact-based single page applications.
+ *
+ * This module provides a builder that processes client-side route files
+ * and generates a bundled SPA with client-side routing using preact-iso.
+ *
+ * @module
+ * @since 0.3.0
+ */
+
 import * as Effect from "@baetheus/fun/effect";
 import * as Err from "@baetheus/fun/err";
 import * as Path from "@std/path";
@@ -13,6 +23,26 @@ import * as Tokens from "./tokens.ts";
 
 const client_builder_error = Err.err("ClientBuilderError");
 
+/**
+ * Configuration options for the client SPA builder.
+ *
+ * Extends Deno.bundle.Options with additional options for controlling
+ * the client build process.
+ *
+ * @example
+ * ```ts
+ * import type { ClientBuilderOptions } from "@baetheus/pick/builder_client";
+ *
+ * const options: ClientBuilderOptions = {
+ *   name: "MySPABuilder",
+ *   title: "My Application",
+ *   include_extensions: [".tsx"],
+ *   minify: true,
+ * };
+ * ```
+ *
+ * @since 0.3.0
+ */
 export type ClientBuilderOptions = Omit<Deno.bundle.Options, "entrypoints"> & {
   readonly name?: string;
   readonly title?: string;
@@ -321,6 +351,29 @@ function check_builder_state(
   return Effect.right(state);
 }
 
+/**
+ * Creates a client SPA builder that processes preact components and generates
+ * a bundled single-page application with client-side routing.
+ *
+ * The builder scans for files exporting ClientPage tokens (client_route,
+ * client_default, client_wrapper, client_index) and generates:
+ * - A bundled JavaScript entrypoint with lazy-loaded routes
+ * - An HTML shell (index.html) for the SPA
+ * - Routes that serve the HTML for client-side navigation
+ *
+ * @example
+ * ```ts
+ * import { client_builder } from "@baetheus/pick/builder_client";
+ *
+ * const builder = client_builder({
+ *   title: "My Application",
+ *   minify: true,
+ *   include_extensions: [".tsx"],
+ * });
+ * ```
+ *
+ * @since 0.3.0
+ */
 export function client_builder(
   _client_config: ClientBuilderOptions = {},
 ): Builder.Builder {

@@ -1,4 +1,6 @@
-# pick - no magic router for [Deno](https://deno.land) http servers.
+# pick - no magic router for [Deno](https://deno.land) http servers
+
+[![JSR](https://jsr.io/badges/@baetheus/pick)](https://jsr.io/@baetheus/pick)
 
 Deno gives us a powerful, fast, web standards compliant http server with a
 simple and extensible new interface. However, most router modules are still
@@ -19,7 +21,7 @@ the following:
    standards.
 3. Uses typescript types and request parsing to provide rich types to handlers.
 4. Composes well enough to implement an SSR framework like fresh as well as an
-   autodocumenting api framework like oxide comput company's dropshot.
+   autodocumenting API framework like Oxide Computer Company's dropshot.
 
 Things that I am willing to give up from existing frameworks:
 
@@ -89,7 +91,7 @@ that can be trivial "simplified" to a very useful minimal implementation.
 Put this all together and a simple router can be set up like so:
 
 ```ts
-import { context, html, right, router } from "./router.ts";
+import { context, html, right, router } from "@baetheus/pick/router";
 
 const ctx = context({ count: 0 });
 
@@ -104,13 +106,115 @@ const myRouter = router(ctx, {
   ],
 });
 
-// Start the server:
-// Deno.serve(myRouter.handle);
+// Start the server
+Deno.serve(myRouter.handle);
+```
+
+## Builder Pattern
+
+Pick includes a powerful builder pattern that enables directory-based routing.
+The builder walks a directory structure and automatically creates routes from
+exported tokens in your files.
+
+### Quick Start
+
+The simplest way to use the builder is with the default `build` export from
+`@baetheus/pick`:
+
+```ts
+import build from "@baetheus/pick";
+import * as R from "@baetheus/pick/router";
+import * as Either from "@baetheus/fun/either";
+
+const result = await build(
+  "./src/routes",           // Root directory to scan
+  "My Application",         // Site title
+  (path) => import(path),   // Dynamic import function
+);
+
+if (Either.isRight(result)) {
+  const routes = result.right.site_routes.map(r => r.route);
+  const router = R.router(R.context({}), { routes });
+  Deno.serve(router.handle);
+}
+```
+
+### Creating Route Files
+
+Route files export tokens created by method builders (`get`, `post`, `put`,
+etc.) from `@baetheus/pick/tokens`. Each exported token becomes a route.
+
+```ts
+// routes/api/users.ts
+import { get, post } from "@baetheus/pick/tokens";
+import * as E from "@baetheus/fun/effect";
+import * as R from "@baetheus/pick/router";
+
+// GET /api/users
+export const list = get(E.gets((req, params, ctx) => {
+  return R.json(JSON.stringify([{ id: 1, name: "Alice" }]));
+}));
+
+// POST /api/users
+export const create = post(E.gets(async (req, params, ctx) => {
+  const body = await req.json();
+  return R.json(JSON.stringify(body), R.STATUS_CODE.Created);
+}));
+```
+
+### Path Parameters
+
+The route path is derived from the file's location relative to the root
+directory. For example, a file at `routes/users/:id.ts` would create routes
+matching `/users/:id`:
+
+```ts
+// routes/users/:id.ts
+import { get, del } from "@baetheus/pick/tokens";
+import * as E from "@baetheus/fun/effect";
+import * as R from "@baetheus/pick/router";
+
+// GET /users/:id
+export const show = get(E.gets((req, params, ctx) => {
+  // params.id is available from the path
+  return R.json(JSON.stringify({ id: params.id }));
+}));
+
+// DELETE /users/:id
+export const remove = del(E.gets((req, params, ctx) => {
+  return R.text("Deleted", R.STATUS_CODE.NoContent);
+}));
+```
+
+### Advanced Configuration
+
+For more control, use the individual builders directly:
+
+```ts
+import { build } from "@baetheus/pick/builder";
+import { deno_fs } from "@baetheus/pick/deno_fs";
+import { server_builder } from "@baetheus/pick/builder_server";
+import { static_builder } from "@baetheus/pick/builder_static";
+
+const result = await build({
+  root_path: "./src/routes",
+  fs: deno_fs,
+  unsafe_import: (path) => import(path),
+  builders: [
+    server_builder({
+      middleware: [authMiddleware, loggingMiddleware],
+      include_extensions: [".ts"],
+    }),
+    static_builder({
+      exclude_extensions: [".ts", ".tsx"],
+    }),
+  ],
+});
 ```
 
 ## Contributing
 
 Contributions are welcome but this is a young library and I expect to muck
-around with it for a good year before I settle the api. Until a 1.0.0 release I
-don't expect that the api will really be settled. That said, the basic concepts
+around with it for a good year before I settle the API. Until a 1.0.0 release I
+don't expect that the API will really be settled. That said, the basic concepts
 are solid so early contributions are likely to last.

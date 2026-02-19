@@ -33,6 +33,22 @@
  * @module
  */
 
+/**
+ * Standard HTTP status codes as defined by various RFCs.
+ *
+ * Provides all HTTP status codes organized by category (1xx-5xx) with
+ * references to the relevant RFC specifications for each code.
+ *
+ * @example
+ * ```ts
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const notFound = STATUS_CODE.NotFound; // 404
+ * const created = STATUS_CODE.Created;   // 201
+ * ```
+ *
+ * @since 0.1.0
+ */
 export const STATUS_CODE = {
   /** RFC 7231, 6.2.1 */
   Continue: 100,
@@ -164,10 +180,34 @@ export const STATUS_CODE = {
   NetworkAuthenticationRequired: 511,
 } as const;
 
-/** An HTTP status code. */
+/**
+ * A union type of all valid HTTP status codes.
+ *
+ * @example
+ * ```ts
+ * import type { StatusCode } from "@baetheus/pick/status";
+ *
+ * function handleResponse(status: StatusCode): string {
+ *   return `Status: ${status}`;
+ * }
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type StatusCode = typeof STATUS_CODE[keyof typeof STATUS_CODE];
 
-/** A record of all the status codes text. */
+/**
+ * A record mapping HTTP status codes to their standard text descriptions.
+ *
+ * @example
+ * ```ts
+ * import { STATUS_CODE, STATUS_TEXT } from "@baetheus/pick/status";
+ *
+ * const text = STATUS_TEXT[STATUS_CODE.NotFound]; // "Not Found"
+ * ```
+ *
+ * @since 0.1.0
+ */
 export const STATUS_TEXT = {
   [STATUS_CODE.Accepted]: "Accepted",
   [STATUS_CODE.AlreadyReported]: "Already Reported",
@@ -234,17 +274,52 @@ export const STATUS_TEXT = {
   [STATUS_CODE.VariantAlsoNegotiates]: "Variant Also Negotiates",
 } as const;
 
-/** An HTTP status text. */
+/**
+ * A union type of all standard HTTP status text descriptions.
+ *
+ * @example
+ * ```ts
+ * import type { StatusText } from "@baetheus/pick/status";
+ *
+ * const text: StatusText = "Not Found";
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type StatusText = typeof STATUS_TEXT[keyof typeof STATUS_TEXT];
 
-/** An HTTP status that is a informational (1XX). */
+/**
+ * A union type of HTTP informational status codes (1XX).
+ *
+ * @example
+ * ```ts
+ * import type { InformationalStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const status: InformationalStatus = STATUS_CODE.Continue;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type InformationalStatus =
   | typeof STATUS_CODE.Continue
   | typeof STATUS_CODE.SwitchingProtocols
   | typeof STATUS_CODE.Processing
   | typeof STATUS_CODE.EarlyHints;
 
-/** An HTTP status that is a success (2XX). */
+/**
+ * A union type of HTTP successful status codes (2XX).
+ *
+ * @example
+ * ```ts
+ * import type { SuccessfulStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const status: SuccessfulStatus = STATUS_CODE.OK;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type SuccessfulStatus =
   | typeof STATUS_CODE.OK
   | typeof STATUS_CODE.Created
@@ -257,7 +332,19 @@ export type SuccessfulStatus =
   | typeof STATUS_CODE.AlreadyReported
   | typeof STATUS_CODE.IMUsed;
 
-/** An HTTP status that is a redirect (3XX). */
+/**
+ * A union type of HTTP redirect status codes (3XX).
+ *
+ * @example
+ * ```ts
+ * import type { RedirectStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const status: RedirectStatus = STATUS_CODE.MovedPermanently;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type RedirectStatus =
   | typeof STATUS_CODE.MultipleChoices // 300
   | typeof STATUS_CODE.MovedPermanently // 301
@@ -267,7 +354,19 @@ export type RedirectStatus =
   | typeof STATUS_CODE.TemporaryRedirect // 307
   | typeof STATUS_CODE.PermanentRedirect; // 308
 
-/** An HTTP status that is a client error (4XX). */
+/**
+ * A union type of HTTP client error status codes (4XX).
+ *
+ * @example
+ * ```ts
+ * import type { ClientErrorStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const status: ClientErrorStatus = STATUS_CODE.NotFound;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type ClientErrorStatus =
   | typeof STATUS_CODE.BadRequest
   | typeof STATUS_CODE.Unauthorized
@@ -298,7 +397,19 @@ export type ClientErrorStatus =
   | typeof STATUS_CODE.RequestHeaderFieldsTooLarge
   | typeof STATUS_CODE.UnavailableForLegalReasons;
 
-/** An HTTP status that is a server error (5XX). */
+/**
+ * A union type of HTTP server error status codes (5XX).
+ *
+ * @example
+ * ```ts
+ * import type { ServerErrorStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE } from "@baetheus/pick/status";
+ *
+ * const status: ServerErrorStatus = STATUS_CODE.InternalServerError;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type ServerErrorStatus =
   | typeof STATUS_CODE.InternalServerError
   | typeof STATUS_CODE.NotImplemented
@@ -312,22 +423,38 @@ export type ServerErrorStatus =
   | typeof STATUS_CODE.NotExtended
   | typeof STATUS_CODE.NetworkAuthenticationRequired;
 
-/** An HTTP status that is an error (4XX and 5XX). */
+/**
+ * A union type of all HTTP error status codes (4XX and 5XX).
+ *
+ * @example
+ * ```ts
+ * import type { ErrorStatus } from "@baetheus/pick/status";
+ * import { STATUS_CODE, isErrorStatus } from "@baetheus/pick/status";
+ *
+ * function handleError(status: ErrorStatus): void {
+ *   console.error(`Error: ${status}`);
+ * }
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type ErrorStatus = ClientErrorStatus | ServerErrorStatus;
 
 /**
  * Returns whether the provided number is a valid HTTP status code.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isStatus } from "@baetheus/pick/status";
  *
- * assert(isStatus(404));
+ * isStatus(404); // true
+ * isStatus(999); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is a valid status code.
+ *
+ * @since 0.1.0
  */
 export function isStatus(status: number): status is StatusCode {
   return Object.values(STATUS_CODE).includes(status as StatusCode);
@@ -336,16 +463,18 @@ export function isStatus(status: number): status is StatusCode {
 /**
  * A type guard that determines if the status code is informational.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isInformationalStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isInformationalStatus } from "@baetheus/pick/status";
  *
- * assert(isInformationalStatus(100));
+ * isInformationalStatus(100); // true
+ * isInformationalStatus(200); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is an informational status code.
+ *
+ * @since 0.1.0
  */
 export function isInformationalStatus(
   status: number,
@@ -356,16 +485,18 @@ export function isInformationalStatus(
 /**
  * A type guard that determines if the status code is successful.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isSuccessfulStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isSuccessfulStatus } from "@baetheus/pick/status";
  *
- * assert(isSuccessfulStatus(200));
+ * isSuccessfulStatus(200); // true
+ * isSuccessfulStatus(404); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is a successful status code.
+ *
+ * @since 0.1.0
  */
 export function isSuccessfulStatus(
   status: number,
@@ -376,16 +507,18 @@ export function isSuccessfulStatus(
 /**
  * A type guard that determines if the status code is a redirection.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isRedirectStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isRedirectStatus } from "@baetheus/pick/status";
  *
- * assert(isRedirectStatus(302));
+ * isRedirectStatus(302); // true
+ * isRedirectStatus(200); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is a redirect status code.
+ *
+ * @since 0.1.0
  */
 export function isRedirectStatus(status: number): status is RedirectStatus {
   return isStatus(status) && status >= 300 && status < 400;
@@ -394,16 +527,18 @@ export function isRedirectStatus(status: number): status is RedirectStatus {
 /**
  * A type guard that determines if the status code is a client error.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isClientErrorStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isClientErrorStatus } from "@baetheus/pick/status";
  *
- * assert(isClientErrorStatus(404));
+ * isClientErrorStatus(404); // true
+ * isClientErrorStatus(500); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is a client error status code.
+ *
+ * @since 0.1.0
  */
 export function isClientErrorStatus(
   status: number,
@@ -414,16 +549,18 @@ export function isClientErrorStatus(
 /**
  * A type guard that determines if the status code is a server error.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isServerErrorStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isServerErrorStatus } from "@baetheus/pick/status";
  *
- * assert(isServerErrorStatus(502));
+ * isServerErrorStatus(502); // true
+ * isServerErrorStatus(404); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is a server error status code.
+ *
+ * @since 0.1.0
  */
 export function isServerErrorStatus(
   status: number,
@@ -434,16 +571,19 @@ export function isServerErrorStatus(
 /**
  * A type guard that determines if the status code is an error.
  *
- * @example Usage
+ * @example
  * ```ts
- * import { isErrorStatus } from "@std/http/status";
- * import { assert } from "@std/assert";
+ * import { isErrorStatus } from "@baetheus/pick/status";
  *
- * assert(isErrorStatus(502));
+ * isErrorStatus(404); // true
+ * isErrorStatus(502); // true
+ * isErrorStatus(200); // false
  * ```
  *
  * @param status The status to assert against.
  * @returns Whether or not the provided status is an error status code.
+ *
+ * @since 0.1.0
  */
 export function isErrorStatus(status: number): status is ErrorStatus {
   return isStatus(status) && status >= 400 && status < 600;

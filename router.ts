@@ -391,6 +391,15 @@ type Rec<Key extends string | symbol = string, Value = string> = {
  * This constant object provides all standard HTTP methods as defined
  * in RFC specifications, including WebDAV methods and other extensions.
  *
+ * @example
+ * ```ts
+ * import { METHODS } from "@baetheus/pick/router";
+ *
+ * console.log(METHODS.GET);    // "GET"
+ * console.log(METHODS.POST);   // "POST"
+ * console.log(METHODS.DELETE); // "DELETE"
+ * ```
+ *
  * @since 0.1.0
  */
 export const METHODS = {
@@ -463,6 +472,20 @@ export type Methods = keyof typeof METHODS;
  * - Wildcard segments with `*` syntax (captured as array of strings)
  * - Static path segments (ignored in the result type)
  * - HTTP method prefix (ignored in the result type)
+ *
+ * @example
+ * ```ts
+ * import type { ParsePath } from "@baetheus/pick/router";
+ *
+ * // Parses to { id: string }
+ * type UserParams = ParsePath<"GET /users/:id">;
+ *
+ * // Parses to { year: string; month: string; slug: string }
+ * type BlogParams = ParsePath<"GET /blog/:year/:month/:slug">;
+ *
+ * // Parses to { "0": readonly string[] }
+ * type WildcardParams = ParsePath<"GET /files/*">;
+ * ```
  *
  * @since 0.1.0
  */
@@ -647,6 +670,21 @@ export const DEFAULT_LOGGER: Logger = {
 
 function noop(): void {}
 
+/**
+ * A logger implementation that silently discards all log messages.
+ *
+ * Useful for testing or when logging should be completely disabled.
+ *
+ * @example
+ * ```ts
+ * import { NOOP_LOGGER, context } from "@baetheus/pick/router";
+ *
+ * const ctx = context({ userId: "123" }, NOOP_LOGGER);
+ * ctx.logger.info("This message is discarded");
+ * ```
+ *
+ * @since 0.1.0
+ */
 export const NOOP_LOGGER: Logger = {
   fatal: noop,
   error: noop,
@@ -660,6 +698,19 @@ export const NOOP_LOGGER: Logger = {
  * The context object passed to route handlers, containing all the information
  * needed to process a request. The context provides access to the original
  * request, URL pattern matching results, and any shared state data.
+ *
+ * @example
+ * ```ts
+ * import type { Ctx } from "@baetheus/pick/router";
+ *
+ * type AppState = { db: Database };
+ *
+ * function handleRequest(ctx: Ctx<AppState>): Response {
+ *   ctx.logger.info("Processing request");
+ *   const db = ctx.state.db;
+ *   return new Response("OK");
+ * }
+ * ```
  *
  * @since 0.1.0
  */
@@ -677,10 +728,19 @@ export type Ctx<D = unknown> = {
  * route handlers, but can also be used directly when testing handlers or
  * building custom routing logic.
  *
- * @param request The original HTTP request object.
- * @param pattern_result The result of URL pattern matching, containing extracted path parameters.
  * @param state The shared state data passed between routes.
+ * @param logger Optional logger instance (defaults to DEFAULT_LOGGER).
  * @returns A context object that can be passed to route handlers.
+ *
+ * @example
+ * ```ts
+ * import { context, router, right } from "@baetheus/pick/router";
+ *
+ * const ctx = context({ count: 0 });
+ * const app = router(ctx, {
+ *   routes: [right("GET /", () => new Response("Hello"))]
+ * });
+ * ```
  *
  * @since 0.1.0
  */
@@ -698,10 +758,19 @@ export function context<D = unknown>(
  * in the Effect's error handling system.
  *
  * The Effect signature is:
- * - Input state: [Ctx<D>] (context with shared state of type D)
+ * - Input state: [Request, URLPatternResult, Ctx<D>]
  * - Error type: Response (failed responses become error values)
  * - Success type: Response (successful responses become success values)
- * - Output state: unknown[] (handler can modify shared state)
+ *
+ * @example
+ * ```ts
+ * import type { Handler } from "@baetheus/pick/router";
+ * import * as E from "@baetheus/fun/effect";
+ *
+ * const myHandler: Handler<{ db: Database }> = E.gets((req, result, ctx) => {
+ *   return new Response("Hello from handler");
+ * });
+ * ```
  *
  * @since 0.1.0
  */
@@ -719,6 +788,17 @@ export type Handler<D = unknown> = Effect<
  * Routes are the core building blocks of the router, defining how different
  * URL patterns and HTTP methods are handled. Each route can access shared
  * state and provides type-safe parameter extraction from URLs.
+ *
+ * @example
+ * ```ts
+ * import type { Route } from "@baetheus/pick/router";
+ * import { right } from "@baetheus/pick/router";
+ *
+ * const userRoute: Route<{ db: Database }> = right(
+ *   "GET /users/:id",
+ *   (req, params, ctx) => new Response(`User: ${params.id}`)
+ * );
+ * ```
  *
  * @since 0.1.0
  */
@@ -738,6 +818,15 @@ export type Route<D = unknown> = {
  * This type should be used sparingly in application code, as it loses the
  * type safety benefits of the generic Route<D> type. It's primarily intended
  * for library and utility functions that need to work with arbitrary routes.
+ *
+ * @example
+ * ```ts
+ * import type { AnyRoute } from "@baetheus/pick/router";
+ *
+ * function logRoutes(routes: AnyRoute[]): void {
+ *   routes.forEach(r => console.log(`${r.method} ${r.pathname}`));
+ * }
+ * ```
  *
  * @since 0.1.0
  */
@@ -1033,7 +1122,17 @@ export function middleware<D>(m: Middleware<D>): Middleware<D> {
  * The router supports method and URL pattern matching, automatic path parameter
  * extraction, and shared state management across all routes.
  *
- * @template S The type of shared state passed to all route handlers.
+ * @example
+ * ```ts
+ * import type { Router } from "@baetheus/pick/router";
+ * import { router, context, right } from "@baetheus/pick/router";
+ *
+ * const app: Router = router(context({}), {
+ *   routes: [right("GET /", () => new Response("Hello"))]
+ * });
+ *
+ * Deno.serve(app.handle);
+ * ```
  *
  * @since 0.1.0
  */
@@ -1051,6 +1150,23 @@ function create_route_map<D>(): { [K in Methods]: Route<D>[] } {
   ) as { [K in Methods]: Route<D>[] };
 }
 
+/**
+ * Configuration options for creating a router instance.
+ *
+ * @example
+ * ```ts
+ * import type { RouterConfig } from "@baetheus/pick/router";
+ * import { right, text, STATUS_CODE } from "@baetheus/pick/router";
+ *
+ * const config: RouterConfig<{}> = {
+ *   routes: [right("GET /", () => new Response("Hello"))],
+ *   middlewares: [loggingMiddleware],
+ *   default_handler: () => text("Not Found", STATUS_CODE.NotFound),
+ * };
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type RouterConfig<D> = {
   readonly routes: Route<D>[];
   readonly middlewares: Middleware<D>[];

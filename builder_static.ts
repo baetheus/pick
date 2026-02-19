@@ -8,6 +8,22 @@ import * as Router from "./router.ts";
 
 const static_builder_error = Err.err("StaticBuilderError");
 
+/**
+ * Configuration options for the static file builder.
+ *
+ * @example
+ * ```ts
+ * import type { StaticBuilderOptions } from "@baetheus/pick/builder_static";
+ *
+ * const options: StaticBuilderOptions = {
+ *   name: "MyStaticBuilder",
+ *   middleware: [],
+ *   exclude_extensions: [".ts", ".tsx"],
+ * };
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type StaticBuilderOptions = {
   readonly name: string;
   readonly middleware: Router.Middleware<unknown>[];
@@ -17,6 +33,19 @@ export type StaticBuilderOptions = {
 
 /**
  * Builds static routes from a file entry.
+ *
+ * Creates routes that serve static files (images, CSS, etc.) directly from
+ * the filesystem. Automatically sets Content-Type headers based on file extension.
+ *
+ * @example
+ * ```ts
+ * import { static_builder } from "@baetheus/pick/builder_static";
+ *
+ * const builder = static_builder({
+ *   name: "AssetsBuilder",
+ *   exclude_extensions: [".ts", ".tsx"],
+ * });
+ * ```
  *
  * @since 0.1.0
  */

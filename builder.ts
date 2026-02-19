@@ -22,7 +22,14 @@ import type * as Tokens from "./tokens.ts";
 import * as Router from "./router.ts";
 
 /**
- * Error type for route building failures.
+ * Error factory for route building failures.
+ *
+ * @example
+ * ```ts
+ * import { build_error } from "@baetheus/pick/builder";
+ *
+ * const error = build_error("Failed to process file", { path: "/src/routes" });
+ * ```
  *
  * @since 0.1.0
  */
@@ -30,6 +37,20 @@ export const build_error: Err.ErrFactory<"BuildError"> = Err.err(
   "BuildError",
 );
 
+/**
+ * Effect type used by builders for async operations with BuildConfig context.
+ *
+ * @example
+ * ```ts
+ * import type { BuildEffect } from "@baetheus/pick/builder";
+ *
+ * function myOperation(): BuildEffect<string[]> {
+ *   return Effect.gets((config) => ["route1", "route2"]);
+ * }
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type BuildEffect<A> = Effect.Effect<
   [BuildConfig],
   Err.AnyErr,
@@ -39,6 +60,18 @@ export type BuildEffect<A> = Effect.Effect<
 
 /**
  * Represents a file entry returned by the directory walker.
+ *
+ * @example
+ * ```ts
+ * import type { FileEntry } from "@baetheus/pick/builder";
+ *
+ * const entry: FileEntry = {
+ *   parsed_path: { root: "/", dir: "/src", base: "index.ts", ext: ".ts", name: "index" },
+ *   absolute_path: "/src/index.ts",
+ *   relative_path: "/index.ts",
+ *   mime_type: Option.some("text/typescript"),
+ * };
+ * ```
  *
  * @since 0.1.0
  */
@@ -55,6 +88,19 @@ export type FileEntry = {
 
 /**
  * Creates a FileEntry from the given parameters.
+ *
+ * @example
+ * ```ts
+ * import { file_entry } from "@baetheus/pick/builder";
+ * import * as Option from "@baetheus/fun/option";
+ * import { parse } from "@std/path";
+ *
+ * const entry = file_entry(
+ *   parse("/src/routes/index.ts"),
+ *   "/routes/index.ts",
+ *   Option.some("text/typescript")
+ * );
+ * ```
  *
  * @since 0.1.0
  */
@@ -74,7 +120,19 @@ export function file_entry(
 }
 
 /**
- * A route tagged with its source and type.
+ * A route tagged with its source builder and file path.
+ *
+ * @example
+ * ```ts
+ * import type { FullRoute } from "@baetheus/pick/builder";
+ *
+ * const route: FullRoute = {
+ *   builder: "ServerBuilder",
+ *   absolute_path: "/src/routes/api.ts",
+ *   parsed_path: parse("/src/routes/api.ts"),
+ *   route: myRoute,
+ * };
+ * ```
  *
  * @since 0.1.0
  */
@@ -86,7 +144,20 @@ export type FullRoute = {
 };
 
 /**
- * Creates a tagged route.
+ * Creates a tagged route from builder name, path, and route.
+ *
+ * @example
+ * ```ts
+ * import { full_route } from "@baetheus/pick/builder";
+ * import * as Router from "@baetheus/pick/router";
+ * import { parse } from "@std/path";
+ *
+ * const route = full_route(
+ *   "MyBuilder",
+ *   parse("/src/api.ts"),
+ *   Router.route("GET", "/api", myHandler)
+ * );
+ * ```
  *
  * @since 0.1.0
  */
@@ -103,6 +174,18 @@ export function full_route(
   };
 }
 
+/**
+ * A collection of FullRoute objects representing all routes in a site.
+ *
+ * @example
+ * ```ts
+ * import type { SiteRoutes } from "@baetheus/pick/builder";
+ *
+ * const routes: SiteRoutes = [route1, route2, route3];
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type SiteRoutes = readonly FullRoute[];
 
 /**
@@ -120,28 +203,76 @@ function walk_directory(
   );
 }
 
+/**
+ * Options for creating temporary files.
+ *
+ * @example
+ * ```ts
+ * import type { MakeTempOptions } from "@baetheus/pick/builder";
+ *
+ * const options: MakeTempOptions = {
+ *   prefix: "bundle-",
+ *   suffix: ".ts",
+ * };
+ * ```
+ *
+ * @since 0.3.0
+ */
 export type MakeTempOptions = {
   readonly dir?: string;
   readonly prefix?: string;
   readonly suffix?: string;
 };
 
+/**
+ * Filesystem abstraction interface for the builder.
+ *
+ * Allows different filesystem implementations (Deno, Node, etc.) to be used
+ * with the build system.
+ *
+ * @example
+ * ```ts
+ * import type { Filesystem } from "@baetheus/pick/builder";
+ * import { deno_fs } from "@baetheus/pick/deno_fs";
+ *
+ * const fs: Filesystem = deno_fs;
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type Filesystem = {
-  // Creates a temporary file that is writable and readable, returns the path
+  /** Creates a temporary file that is writable and readable, returns the path */
   readonly makeTempFile: (options?: MakeTempOptions) => Promise<string>;
-  // Walk takes a directory path and returns an array of FileEntries
-  // which must all be files and not directories.
+  /** Walk takes a directory path and returns an array of FileEntries (files only) */
   readonly walk: (root: string) => Promise<readonly FileEntry[]>;
-  // Read takes a ParsedPath and returns a readable stream of that file.
+  /** Read takes a ParsedPath and returns a readable stream of that file */
   readonly read: (
     path: Path.ParsedPath,
   ) => Promise<ReadableStream<Uint8Array<ArrayBuffer>>>;
+  /** Write takes a ParsedPath and data to write to the file */
   readonly write: (
     path: Path.ParsedPath,
     data: Uint8Array | ReadableStream<Uint8Array>,
   ) => Promise<void>;
 };
 
+/**
+ * Interface for route builders that process files and generate routes.
+ *
+ * @example
+ * ```ts
+ * import type { Builder } from "@baetheus/pick/builder";
+ * import * as Effect from "@baetheus/fun/effect";
+ *
+ * const myBuilder: Builder = {
+ *   name: "MyBuilder",
+ *   process_file: (entry) => Effect.right([]),
+ *   process_build: (routes) => Effect.right([]),
+ * };
+ * ```
+ *
+ * @since 0.1.0
+ */
 export type Builder = {
   readonly name: string;
   readonly process_file: (entry: FileEntry) => BuildEffect<SiteRoutes>;
@@ -150,6 +281,20 @@ export type Builder = {
 
 /**
  * Configuration for the site builder.
+ *
+ * @example
+ * ```ts
+ * import type { BuildConfig } from "@baetheus/pick/builder";
+ * import { deno_fs } from "@baetheus/pick/deno_fs";
+ * import { server_builder } from "@baetheus/pick/builder_server";
+ *
+ * const config: BuildConfig = {
+ *   root_path: "./src/routes",
+ *   fs: deno_fs,
+ *   unsafe_import: (path) => import(path),
+ *   builders: [server_builder({})],
+ * };
+ * ```
  *
  * @since 0.1.0
  */
@@ -161,7 +306,16 @@ export type BuildConfig = {
 };
 
 /**
- * Converts a PartialRoute to a full Route.
+ * Converts a PartialRoute token to a full Route with file path information.
+ *
+ * @example
+ * ```ts
+ * import { from_partial_route } from "@baetheus/pick/builder";
+ * import { get } from "@baetheus/pick/tokens";
+ *
+ * const partial = get(myHandler);
+ * const full = from_partial_route("MyBuilder", fileEntry, partial);
+ * ```
  *
  * @since 0.1.0
  */
@@ -177,6 +331,18 @@ export function from_partial_route(
   );
 }
 
+/**
+ * Wraps a handler with an array of middleware functions.
+ *
+ * @example
+ * ```ts
+ * import { wrap_handler } from "@baetheus/pick/builder";
+ *
+ * const wrapped = wrap_handler(myHandler, [loggingMiddleware, authMiddleware]);
+ * ```
+ *
+ * @since 0.1.0
+ */
 export function wrap_handler(
   handler: Router.Handler,
   middlewares: readonly Router.Middleware<unknown>[],
@@ -187,6 +353,20 @@ export function wrap_handler(
   );
 }
 
+/**
+ * Wraps a PartialRoute's handler with middleware functions.
+ *
+ * @example
+ * ```ts
+ * import { wrap_partial_route } from "@baetheus/pick/builder";
+ * import { get } from "@baetheus/pick/tokens";
+ *
+ * const partial = get(myHandler);
+ * const wrapped = wrap_partial_route(partial, [authMiddleware]);
+ * ```
+ *
+ * @since 0.1.0
+ */
 export function wrap_partial_route(
   partial_route: Tokens.PartialRoute,
   middlewares: readonly Router.Middleware<unknown>[],
@@ -199,6 +379,16 @@ export function wrap_partial_route(
 
 /**
  * Find the export name of a value by object equality.
+ *
+ * @example
+ * ```ts
+ * import { findExportNameByEquality } from "@baetheus/pick/builder";
+ * import * as Option from "@baetheus/fun/option";
+ *
+ * const exports = { myRoute: routeObj, other: {} };
+ * const name = findExportNameByEquality(exports, routeObj);
+ * // Option.some("myRoute")
+ * ```
  *
  * @since 0.3.0
  */
@@ -215,7 +405,17 @@ export function findExportNameByEquality(
 }
 
 /**
- * Result of building a site.
+ * Result of building a site, containing config and generated routes.
+ *
+ * @example
+ * ```ts
+ * import type { SiteBuildResult } from "@baetheus/pick/builder";
+ *
+ * const result: SiteBuildResult = {
+ *   config: buildConfig,
+ *   site_routes: [route1, route2],
+ * };
+ * ```
  *
  * @since 0.3.0
  */
@@ -226,6 +426,19 @@ export type SiteBuildResult = {
 
 const traverse = Array.traverse(Effect.getFlatmappableEffect<[BuildConfig]>());
 
+/**
+ * Safely imports a module and returns its exports as a record.
+ *
+ * @example
+ * ```ts
+ * import { safe_import } from "@baetheus/pick/builder";
+ * import { parse } from "@std/path";
+ *
+ * const exports = safe_import(parse("/src/routes/api.ts"));
+ * ```
+ *
+ * @since 0.1.0
+ */
 export function safe_import(
   path: Path.ParsedPath,
 ): BuildEffect<Record<string, unknown>> {
@@ -245,10 +458,34 @@ export function safe_import(
 }
 
 /**
- * Builds a site from a directory.
+ * Builds a site from a directory by walking the file system and processing
+ * files through configured builders.
  *
  * Returns route information, metadata, and bundle data without initializing
  * a router. Use `Router.router()` to create a router from the returned routes.
+ *
+ * @example
+ * ```ts
+ * import { build } from "@baetheus/pick/builder";
+ * import { deno_fs } from "@baetheus/pick/deno_fs";
+ * import { server_builder } from "@baetheus/pick/builder_server";
+ * import { static_builder } from "@baetheus/pick/builder_static";
+ * import * as Either from "@baetheus/fun/either";
+ *
+ * const result = await build({
+ *   root_path: "./src/routes",
+ *   fs: deno_fs,
+ *   unsafe_import: (path) => import(path),
+ *   builders: [
+ *     server_builder({}),
+ *     static_builder({ exclude_extensions: [".ts"] }),
+ *   ],
+ * });
+ *
+ * if (Either.isRight(result)) {
+ *   const routes = result.right.site_routes;
+ * }
+ * ```
  *
  * @since 0.1.0
  */

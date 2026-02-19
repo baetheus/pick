@@ -1,4 +1,7 @@
 {
+  "unstable": [
+    "bundle"
+  ],
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
@@ -13,6 +16,6 @@
     "../../"
   ],
   "tasks": {
-    "start": "deno run -A --unstable-bundle main.ts"
+    "start": "deno run -A main.ts"
   }
 }

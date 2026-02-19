@@ -1,6 +1,9 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.11.0",
+  "version": "0.12.0",
+  "unstable": [
+    "bundle"
+  ],
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
@@ -34,6 +37,6 @@
     "./testing/fixtures/*"
   ],
   "tasks": {
-    "test": "deno test --allow-read=testing/fixtures --allow-write --allow-env=\"TSC_*\" --unstable-bundle"
+    "test": "deno test --allow-read=testing/fixtures --allow-write"
   }
 }

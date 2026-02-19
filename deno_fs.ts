@@ -13,6 +13,7 @@ function get_mime_type(extension: string): Option.Option<string> {
 }
 
 export const deno_fs: Filesystem = {
+  makeTempFile: Deno.makeTempFile,
   walk: async (root) => {
     const normalized_root = normalize(root);
     return pipe(
@@ -33,4 +34,5 @@ export const deno_fs: Filesystem = {
     const file = await Deno.open(format(path), { read: true });
     return file.readable;
   },
+  write: (path, data) => Deno.writeFile(format(path), data),
 };

@@ -13,13 +13,12 @@ import * as Effect from "@baetheus/fun/effect";
 import * as Either from "@baetheus/fun/either";
 import * as Err from "@baetheus/fun/err";
 import * as Option from "@baetheus/fun/option";
-import * as Record from "@baetheus/fun/record";
 import { flow, pipe } from "@baetheus/fun/fn";
 
 import * as Path from "@std/path";
 
+import type * as Tokens from "./tokens.ts";
 import * as Router from "./router.ts";
-import * as Tokens from "./tokens.ts";
 
 /**
  * Error type for route building failures.
@@ -120,7 +119,15 @@ function walk_directory(
   );
 }
 
+export type MakeTempOptions = {
+  readonly dir?: string;
+  readonly prefix?: string;
+  readonly suffix?: string;
+};
+
 export type Filesystem = {
+  // Creates a temporary file that is writable and readable, returns the path
+  readonly makeTempFile: (options?: MakeTempOptions) => Promise<string>;
   // Walk takes a directory path and returns an array of FileEntries
   // which must all be files and not directories.
   readonly walk: (root: string) => Promise<readonly FileEntry[]>;
@@ -128,6 +135,10 @@ export type Filesystem = {
   readonly read: (
     path: Path.ParsedPath,
   ) => Promise<ReadableStream<Uint8Array<ArrayBuffer>>>;
+  readonly write: (
+    path: Path.ParsedPath,
+    data: Uint8Array | ReadableStream<Uint8Array>,
+  ) => Promise<void>;
 };
 
 export type Builder = {
@@ -248,13 +259,13 @@ export function build(
         // Give each builder the full site_routes array to make additional routes
         config.builders.map((builder) => builder.process_build(site_routes)),
         traverse((routes_effect) => routes_effect),
+        // Merge the file routes with the build routes.
+        Effect.map(
+          (build_routes) => [...site_routes, ...Array.join(build_routes)],
+        ),
       )
     ),
-    // Join the SiteRoutes[] again
-    Effect.map((site_routes_routes) => ({
-      config,
-      site_routes: Array.join(site_routes_routes),
-    })),
+    Effect.map((site_routes) => ({ config, site_routes })),
     Effect.evaluate(config),
   );
 }

@@ -190,7 +190,7 @@ function addAppFunction(
             });
             if (state.default_routes.length > 0) {
               writer.writeLine(
-                `h(Route, { path: "/*", component: DefaultRoute }),`,
+                `h(Route, { path: "/*", component: DefaultRoute, default: true }),`,
               );
             }
           });
@@ -209,7 +209,6 @@ function addRenderStatement(sourceFile: SourceFile): void {
   sourceFile.addStatements((writer) => {
     writer.blankLine();
     writer.writeLine(`render(App(), document.body);`);
-    writer.writeLine(`console.log("Hello World");`);
   });
 }
 
@@ -300,7 +299,7 @@ export function client_builder(
     title: "My Site",
     include_extensions: [".ts", ".tsx"],
     minify: true,
-    codeSplitting: false,
+    codeSplitting: true,
     inlineImports: true,
     sourcemap: "linked" as const,
     outputDir: "./",

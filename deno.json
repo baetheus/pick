@@ -35,5 +35,8 @@
   ],
   "exclude": [
     "./testing/fixtures/*"
-  ]
+  ],
+  "tasks": {
+    "test": "deno test --allow-read=testing/fixtures --allow-write --allow-env=\"TSC_*\" --unstable-bundle"
+  }
 }

@@ -3,16 +3,12 @@
   "specifiers": {
     "jsr:@baetheus/fun@*": "2.3.5",
     "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.8",
-    "jsr:@baetheus/pick@0.4": "0.4.0",
     "jsr:@deno/cache-dir@0.13.2": "0.13.2",
     "jsr:@deno/emit@*": "0.46.0",
-    "jsr:@luca/esbuild-deno-loader@~0.11.1": "0.11.1",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/assert@^1.0.15": "1.0.18",
     "jsr:@std/async@*": "1.0.14",
     "jsr:@std/bytes@0.223": "0.223.0",
-    "jsr:@std/bytes@^1.0.2": "1.0.6",
-    "jsr:@std/encoding@^1.0.5": "1.0.10",
     "jsr:@std/fmt@0.223": "0.223.0",
     "jsr:@std/fs@0.223": "0.223.0",
     "jsr:@std/fs@^1.0.17": "1.0.22",
@@ -20,7 +16,6 @@
     "jsr:@std/io@0.223": "0.223.0",
     "jsr:@std/media-types@^1.1.0": "1.1.0",
     "jsr:@std/path@0.223": "0.223.0",
-    "jsr:@std/path@^1.0.6": "1.1.4",
     "jsr:@std/path@^1.0.8": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@types/node@*": "22.12.0",
@@ -39,14 +34,6 @@
     "@baetheus/fun@3.0.0-rc.8": {
       "integrity": "d84c6f3d403bd91c397c55a5736b1ea39e9054f7a8b0fa689a01743d3657b1ea"
     },
-    "@baetheus/pick@0.4.0": {
-      "integrity": "3ae0e89b76e93f3ec5e21ef70e5ffc4e1dd3803f25d5824b067ffddf26fb066b",
-      "dependencies": [
-        "jsr:@baetheus/fun@^3.0.0-rc.8",
-        "jsr:@std/path@^1.0.8",
-        "npm:preact"
-      ]
-    },
     "@deno/cache-dir@0.13.2": {
       "integrity": "c22419dfe27ab85f345bee487aaaadba498b005cce3644e9d2528db035c5454d",
       "dependencies": [
@@ -63,14 +50,6 @@
         "jsr:@std/path@0.223"
       ]
     },
-    "@luca/esbuild-deno-loader@0.11.1": {
-      "integrity": "dc020d16d75b591f679f6b9288b10f38bdb4f24345edb2f5732affa1d9885267",
-      "dependencies": [
-        "jsr:@std/bytes@^1.0.2",
-        "jsr:@std/encoding",
-        "jsr:@std/path@^1.0.6"
-      ]
-    },
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"
     },
@@ -85,12 +64,6 @@
     },
     "@std/bytes@0.223.0": {
       "integrity": "84b75052cd8680942c397c2631318772b295019098f40aac5c36cead4cba51a8"
-    },
-    "@std/bytes@1.0.6": {
-      "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
-    },
-    "@std/encoding@1.0.10": {
-      "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
     },
     "@std/fmt@0.223.0": {
       "integrity": "6deb37794127dfc7d7bded2586b9fc6f5d50e62a8134846608baf71ffc1a5208"
@@ -115,7 +88,7 @@
       "integrity": "2d8c3c2ab3a515619b90da2c6ff5ea7b75a94383259ef4d02116b228393f84f1",
       "dependencies": [
         "jsr:@std/assert@0.223",
-        "jsr:@std/bytes@0.223"
+        "jsr:@std/bytes"
       ]
     },
     "@std/media-types@1.1.0": {
@@ -594,7 +567,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@baetheus/fun@^3.0.0-rc.8",
-      "jsr:@baetheus/pick@0.4",
+      "jsr:@baetheus/pick@0.8",
       "jsr:@luca/esbuild-deno-loader@~0.11.1",
       "jsr:@std/assert@^1.0.15",
       "jsr:@std/fs@^1.0.17",

@@ -42,7 +42,9 @@
     "@baetheus/pick@0.4.0": {
       "integrity": "3ae0e89b76e93f3ec5e21ef70e5ffc4e1dd3803f25d5824b067ffddf26fb066b",
       "dependencies": [
-        "jsr:@baetheus/fun@^3.0.0-rc.8"
+        "jsr:@baetheus/fun@^3.0.0-rc.8",
+        "jsr:@std/path@^1.0.8",
+        "npm:preact"
       ]
     },
     "@deno/cache-dir@0.13.2": {

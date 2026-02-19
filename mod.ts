@@ -18,7 +18,7 @@ export default function build(
     builders: [
       BuilderClient.client_builder({ title: site_name }),
       BuilderServer.server_builder({}),
-      BuilderStatic.static_builder(),
+      BuilderStatic.static_builder({ exclude_extensions: [".ts", ".tsx"] }),
     ],
   });
 }

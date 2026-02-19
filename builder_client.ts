@@ -208,12 +208,8 @@ function addAppFunction(
 function addRenderStatement(sourceFile: SourceFile): void {
   sourceFile.addStatements((writer) => {
     writer.blankLine();
-    writer.writeLine("// Mount the application");
-    writer.write("if (document?.body)").block(() => {
-      writer.writeLine(
-        `render(h(App, null), document.body);`,
-      );
-    });
+    writer.writeLine(`render(App(), document.body);`);
+    writer.writeLine(`console.log("Hello World");`);
   });
 }
 
@@ -306,6 +302,8 @@ export function client_builder(
     minify: true,
     codeSplitting: false,
     inlineImports: true,
+    sourcemap: "linked" as const,
+    outputDir: "./",
     ..._client_config,
   };
   // Closure state for accumulating client routes and components
@@ -359,6 +357,7 @@ export function client_builder(
           Effect.gets(async (config) => {
             // Step 1: Generate TypeScript Entrypoint with ts-morph
             const tempFilePath = await config.fs.makeTempFile({
+              prefix: "bundle-",
               suffix: ".ts",
             });
             const sourceText = generateEntrypointSource(tempFilePath, state);
@@ -434,17 +433,17 @@ export function client_builder(
         ),
         Effect.bind(
           "routes",
-          ({ config, indexHandler, state, bundle_assets }) => {
+          ({ indexHandler, state, bundle_assets }) => {
             const routes: Builder.FullRoute[] = [];
 
             // Client Root Route /
-            routes.push(
-              Builder.full_route(
-                client_config.name,
-                Path.parse(config[0].root_path),
-                Router.route("GET", "/", indexHandler),
-              ),
-            );
+            // routes.push(
+            //   Builder.full_route(
+            //     client_config.name,
+            //     Path.parse(config[0].root_path),
+            //     Router.route("GET", "/", indexHandler),
+            //   ),
+            // );
 
             // Client routes for child pages - all serve index.html for SPA behavior
             for (const route of state.routes) {
@@ -463,7 +462,9 @@ export function client_builder(
 
             // Bundle assets - serve from memory
             for (const [assetPath, contents] of bundle_assets) {
-              const parsed_path = Path.parse(assetPath);
+              const parsed_path = Path.parse(
+                Path.normalize(assetPath),
+              );
               const mimeType = contentType(parsed_path.ext);
               // Create a new Uint8Array to ensure proper BodyInit compatibility
               const assetBytes = new Uint8Array(contents);
@@ -494,7 +495,7 @@ export function client_builder(
                 Builder.full_route(
                   client_config.name,
                   default_route.file_entry.parsed_path,
-                  Router.route("GET", "/*", indexHandler),
+                  Router.route("GET", "/", indexHandler),
                 ),
               );
             }

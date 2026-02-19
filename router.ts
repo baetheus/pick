@@ -802,12 +802,13 @@ export type AnyRoute = Route<any>;
  */
 export function route<D>(
   method: Methods,
-  pathname: string,
+  path: string,
   handler: Handler<D>,
 ): Route<D> {
+  const pathname = path.startsWith("/") ? path : `/${path}`;
   return {
     method,
-    pathname: pathname.startsWith("/") ? pathname : `/${pathname}`,
+    pathname,
     handler,
     url_pattern: new URLPattern({ pathname }),
   };

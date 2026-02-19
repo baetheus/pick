@@ -1,13 +1,3 @@
-/**
- * Main entry point for the pick router builder.
- *
- * This module exports a convenient build function that configures all standard
- * builders (client, server, static) with sensible defaults for Deno applications.
- *
- * @module
- * @since 0.1.0
- */
-
 import type { AnyErr } from "@baetheus/fun/err";
 import type { Either } from "@baetheus/fun/either";
 import * as Builder from "./builder.ts";

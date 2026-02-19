@@ -6,7 +6,7 @@ jobs:
   test:
     strategy:
       matrix:
-        deno: ["v2.2.12"]
+        deno: ["v2.6.0"]
         os: [macOS-latest, windows-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
@@ -21,7 +21,7 @@ jobs:
           deno-version: ${{ matrix.deno }}
 
       - name: Run Deno Tests
-        run: deno test --parallel --coverage=coverage
+        run: deno test -A --unstable-bundle --parallel --coverage=coverage
 
       - name: Generate Coverage
         run: deno coverage --unstable ./coverage --lcov > ./coverage/lcov.info

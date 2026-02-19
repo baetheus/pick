@@ -127,13 +127,13 @@ import * as R from "@baetheus/pick/router";
 import * as Either from "@baetheus/fun/either";
 
 const result = await build(
-  "./src/routes",           // Root directory to scan
-  "My Application",         // Site title
-  (path) => import(path),   // Dynamic import function
+  "./src/routes", // Root directory to scan
+  "My Application", // Site title
+  (path) => import(path), // Dynamic import function
 );
 
 if (Either.isRight(result)) {
-  const routes = result.right.site_routes.map(r => r.route);
+  const routes = result.right.site_routes.map((r) => r.route);
   const router = R.router(R.context({}), { routes });
   Deno.serve(router.handle);
 }
@@ -170,7 +170,7 @@ matching `/users/:id`:
 
 ```ts
 // routes/users/:id.ts
-import { get, del } from "@baetheus/pick/tokens";
+import { del, get } from "@baetheus/pick/tokens";
 import * as E from "@baetheus/fun/effect";
 import * as R from "@baetheus/pick/router";
 

@@ -463,7 +463,8 @@ export function client_builder(
 
             // Bundle assets - serve from memory
             for (const [assetPath, contents] of bundle_assets) {
-              const mimeType = contentType(assetPath);
+              const parsed_path = Path.parse(assetPath);
+              const mimeType = contentType(parsed_path.ext);
               // Create a new Uint8Array to ensure proper BodyInit compatibility
               const assetBytes = new Uint8Array(contents);
               const assetHandler: Router.Handler = Effect.gets(() =>

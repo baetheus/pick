@@ -1,13 +1,17 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },
   "exports": {
+    ".": "./mod.ts",
     "./router": "./router.ts",
     "./builder": "./builder.ts",
+    "./builder_client": "./builder_client.ts",
+    "./builder_server": "./builder_server.ts",
+    "./builder_static": "./builder_static.ts",
     "./tokens": "./tokens.ts"
   },
   "imports": {

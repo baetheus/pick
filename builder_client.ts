@@ -4,11 +4,6 @@ import * as Path from "@std/path";
 import * as Refinement from "@baetheus/fun/refinement";
 import { pipe } from "@baetheus/fun/fn";
 import { contentType } from "@std/media-types";
-import {
-  Project,
-  type SourceFile,
-  VariableDeclarationKind,
-} from "@ts-morph/ts-morph";
 import { renderToString } from "preact-render-to-string";
 import { h } from "preact";
 
@@ -86,160 +81,195 @@ const client_index_pair = Refinement.tuple(
   Tokens.client_index.refine,
 );
 
-function addPreactImports(sourceFile: SourceFile): void {
-  sourceFile.addImportDeclaration({
-    moduleSpecifier: "preact",
-    namedImports: ["h", "render", "Fragment"],
-  });
+// --- String Combinators for Code Generation ---
 
-  sourceFile.addImportDeclaration({
-    moduleSpecifier: "preact-iso",
-    namedImports: [
-      "LocationProvider",
-      "Router",
-      "Route",
-      "ErrorBoundary",
-      "lazy",
-    ],
-  });
+// Low-level string helpers
+const join = (sep: string) => (items: string[]): string => items.join(sep);
+const wrap = (prefix: string, suffix: string) => (content: string): string =>
+  `${prefix}${content}${suffix}`;
+const braces = wrap("{", "}");
+const parens = wrap("(", ")");
+const quoted = wrap('"', '"');
+
+// List combinators
+const commaList = join(", ");
+const lineList = join("\n");
+
+// Property access and calls
+const prop = (obj: string, key: string): string => `${obj}.${key}`;
+const call = (fn: string, ...args: string[]): string =>
+  `${fn}${parens(commaList(args))}`;
+const methodCall = (obj: string, method: string, ...args: string[]): string =>
+  call(prop(obj, method), ...args);
+
+// Expressions
+const arrow = (params: string, body: string): string =>
+  `${parens(params)} => ${body}`;
+const arrowExpr = (body: string): string => arrow("", body);
+const dynamicImport = (path: string): string => call("import", quoted(path));
+const objectLiteral = (entries: [string, string][]): string =>
+  braces(` ${commaList(entries.map(([k, v]) => `${k}: ${v}`))} `);
+
+// Import combinators
+const namedImport = (name: string): string => name;
+const aliasedImport = (name: string, alias: string): string =>
+  `${name} as ${alias}`;
+const importList = (imports: string[]): string =>
+  braces(` ${commaList(imports)} `);
+const importDecl = (specifier: string, imports: string[]): string =>
+  `import ${importList(imports)} from ${quoted(specifier)};`;
+
+// Declaration combinators
+const constDecl = (name: string, initializer: string): string =>
+  `const ${name} = ${initializer};`;
+const funcDecl = (name: string, body: string): string =>
+  `function ${name}() { ${body} }`;
+const returnStmt = (expr: string): string => `return ${expr};`;
+const statement = (expr: string): string => `${expr};`;
+// Preact-specific combinators
+const hCall = (
+  component: string,
+  props: string,
+  ...children: string[]
+): string =>
+  children.length > 0
+    ? call("h", component, props, ...children)
+    : call("h", component, props);
+
+const lazyComponent = (path: string, exportName: string): string =>
+  call(
+    "lazy",
+    arrowExpr(
+      methodCall(
+        dynamicImport(path),
+        "then",
+        arrow(
+          "m",
+          parens(
+            objectLiteral([[
+              "default",
+              prop(prop("m", exportName), "component"),
+            ]]),
+          ),
+        ),
+      ),
+    ),
+  );
+
+// Code generation functions
+function genPreactImports(): string[] {
+  return [
+    importDecl("preact", ["h", "render", "Fragment"].map(namedImport)),
+    importDecl(
+      "preact-iso",
+      [
+        "LocationProvider",
+        "Router",
+        "Route",
+        "ErrorBoundary",
+        "lazy",
+      ].map(namedImport),
+    ),
+  ];
 }
 
-function addWrapperImport(
-  sourceFile: SourceFile,
+function genWrapperImport(
   wrapper: ClientRouteEntry<"ClientWrapper", Tokens.ClientWrapperParameters>,
-): void {
-  sourceFile.addImportDeclaration({
-    moduleSpecifier: `${wrapper.file_entry.absolute_path}`,
-    namedImports: [
-      {
-        name: wrapper.export_pair[0],
-        alias: "WrapperModule",
-      },
-    ],
-  });
-}
-
-function addLazyRouteVariables(
-  sourceFile: SourceFile,
-  routes: ClientRouteEntry<"ClientRoute">[],
-): void {
-  routes.forEach((route, index) => {
-    sourceFile.addVariableStatement({
-      declarationKind: VariableDeclarationKind.Const,
-      declarations: [
-        {
-          name: `Route${index}`,
-          initializer:
-            `lazy(() => import("${route.file_entry.absolute_path}").then(m => ({ default: m.${
-              route.export_pair[0]
-            }.component })))`,
-        },
-      ],
-    });
-  });
-}
-
-function addDefaultRouteVariable(
-  sourceFile: SourceFile,
-  defaultRoute: ClientRouteEntry<"ClientDefaultRoute">,
-): void {
-  sourceFile.addVariableStatement({
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: "DefaultRoute",
-        initializer:
-          `lazy(() => import("${defaultRoute.file_entry.absolute_path}").then(m => ({ default: m.${
-            defaultRoute.export_pair[0]
-          }.component })))`,
-      },
-    ],
-  });
-}
-
-function addAppFunction(
-  sourceFile: SourceFile,
-  state: ClientBuilderState,
-): void {
-  const appFunction = sourceFile.addFunction({
-    name: "App",
-    isExported: false,
-  });
-
-  appFunction.setBodyText((writer) => {
-    writer.write("return ");
-
-    const wrapperComponent = state.wrappers.length > 0
-      ? "WrapperModule.component"
-      : "Fragment";
-
-    writer.write(`h(${wrapperComponent}, null,`);
-    writer.indent(() => {
-      writer.write("h(LocationProvider, null,");
-      writer.indent(() => {
-        writer.write("h(ErrorBoundary, null,");
-        writer.indent(() => {
-          writer.write("h(Router, null,");
-          writer.indent(() => {
-            state.routes.forEach((route, index) => {
-              writer.writeLine(
-                `h(Route, { path: "${
-                  strip_extension(route.file_entry.relative_path)
-                }", component: Route${index} }),`,
-              );
-            });
-            if (state.default_routes.length > 0) {
-              writer.writeLine(
-                `h(Route, { path: "/*", component: DefaultRoute, default: true }),`,
-              );
-            }
-          });
-          writer.write(")"); // Close Router
-        });
-        writer.write(")"); // Close ErrorBoundary
-      });
-      writer.write(")"); // Close LocationProvider
-    });
-    writer.write(")"); // Close Wrapper
-    writer.write(";");
-  });
-}
-
-function addRenderStatement(sourceFile: SourceFile): void {
-  sourceFile.addStatements((writer) => {
-    writer.blankLine();
-    writer.writeLine(`render(App(), document.body);`);
-  });
-}
-
-function generateEntrypointSource(
-  tempFilePath: string,
-  state: ClientBuilderState,
 ): string {
-  const project = new Project({
-    useInMemoryFileSystem: false,
-  });
+  return importDecl(
+    wrapper.file_entry.absolute_path,
+    [aliasedImport(wrapper.export_pair[0], "WrapperModule")],
+  );
+}
 
-  const sourceFile = project.createSourceFile(tempFilePath, "", {
-    overwrite: true,
-  });
+function genLazyRouteVariables(
+  routes: ClientRouteEntry<"ClientRoute">[],
+): string[] {
+  return routes.map((route, index) =>
+    constDecl(
+      `Route${index}`,
+      lazyComponent(route.file_entry.absolute_path, route.export_pair[0]),
+    )
+  );
+}
 
-  addPreactImports(sourceFile);
+function genDefaultRouteVariable(
+  defaultRoute: ClientRouteEntry<"ClientDefaultRoute">,
+): string {
+  return constDecl(
+    "DefaultRoute",
+    lazyComponent(
+      defaultRoute.file_entry.absolute_path,
+      defaultRoute.export_pair[0],
+    ),
+  );
+}
 
-  if (state.wrappers.length > 0) {
-    addWrapperImport(sourceFile, state.wrappers[0]);
-  }
+function genRouteElement(path: string, component: string): string {
+  return hCall(
+    "Route",
+    objectLiteral([["path", quoted(path)], ["component", component]]),
+  );
+}
 
-  addLazyRouteVariables(sourceFile, state.routes);
+function genDefaultRouteElement(): string {
+  return hCall(
+    "Route",
+    objectLiteral([
+      ["path", quoted("/*")],
+      ["component", "DefaultRoute"],
+      ["default", "true"],
+    ]),
+  );
+}
+
+function genAppFunction(state: ClientBuilderState): string {
+  const wrapperComponent = state.wrappers.length > 0
+    ? prop("WrapperModule", "component")
+    : "Fragment";
+
+  const routeElements = state.routes.map((route, index) =>
+    genRouteElement(
+      strip_extension(route.file_entry.relative_path),
+      `Route${index}`,
+    )
+  );
 
   if (state.default_routes.length > 0) {
-    addDefaultRouteVariable(sourceFile, state.default_routes[0]);
+    routeElements.push(genDefaultRouteElement());
   }
 
-  addAppFunction(sourceFile, state);
-  addRenderStatement(sourceFile);
+  const routerContent = hCall("Router", "null", ...routeElements);
+  const errorBoundary = hCall("ErrorBoundary", "null", routerContent);
+  const locationProvider = hCall("LocationProvider", "null", errorBoundary);
+  const appBody = hCall(wrapperComponent, "null", locationProvider);
 
-  return sourceFile.getFullText();
+  return funcDecl("App", returnStmt(appBody));
+}
+
+function genRenderStatement(): string {
+  return statement(call("render", call("App"), prop("document", "body")));
+}
+
+function generateEntrypointSource(state: ClientBuilderState): string {
+  const lines: string[] = [];
+
+  lines.push(...genPreactImports());
+
+  if (state.wrappers.length > 0) {
+    lines.push(genWrapperImport(state.wrappers[0]));
+  }
+
+  lines.push(...genLazyRouteVariables(state.routes));
+
+  if (state.default_routes.length > 0) {
+    lines.push(genDefaultRouteVariable(state.default_routes[0]));
+  }
+
+  lines.push(genAppFunction(state));
+  lines.push(genRenderStatement());
+
+  return lineList(lines);
 }
 
 function safe_bundle(
@@ -354,14 +384,12 @@ export function client_builder(
         Effect.bind("state", () => check_builder_state(state)),
         Effect.bind("entrypoint", ({ state }) =>
           Effect.gets(async (config) => {
-            // Step 1: Generate TypeScript Entrypoint with ts-morph
             const tempFilePath = await config.fs.makeTempFile({
               prefix: "bundle-",
               suffix: ".ts",
             });
-            const sourceText = generateEntrypointSource(tempFilePath, state);
+            const sourceText = generateEntrypointSource(state);
 
-            // Step 2: Write Temp File
             const encoder = new TextEncoder();
             const sourceBytes = encoder.encode(sourceText);
             await config.fs.write(Path.parse(tempFilePath), sourceBytes);

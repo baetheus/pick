@@ -108,6 +108,6 @@ Deno.test("client_builder - full test", async () => {
   assertEquals(Either.isRight(result), true);
   assertEquals(
     (<Either.Right<Builder.SiteBuildResult>> result).right.site_routes.length,
-    4,
+    14,
   );
 });

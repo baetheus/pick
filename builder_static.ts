@@ -56,14 +56,20 @@ export function static_builder(
             "GET",
             file_entry.relative_path,
             Builder.wrap_handler(
-              Effect.tryCatch(async () => {
+              Effect.tryCatch(async (..._) => {
                 const stream = await config.fs.read(file_entry.parsed_path);
                 return new Response(stream, { headers });
-              }, (error) =>
-                static_builder_error("Unable to read static file", {
+              }, (error, [_req, _url, ctx]) => {
+                const err = static_builder_error("Unable to read static file", {
                   file_entry,
                   error,
-                })),
+                });
+                ctx.logger.warn(err);
+                return Router.text(
+                  "Internal Server Error",
+                  Router.STATUS_CODE.InternalServerError,
+                );
+              }),
               middleware,
             ),
           ),

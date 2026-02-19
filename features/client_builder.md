@@ -1,12 +1,17 @@
+
 # ClientBuilder Design Document
 
 ## Overview
 
-The ClientBuilder is a Builder implementation that processes client-side Preact components and generates a bundled single-page application (SPA). It integrates with the generic builder system to walk directories, identify client page exports, and produce an in-memory bundle served via generated routes.
+The ClientBuilder is a Builder implementation that processes client-side Preact
+components and generates a bundled single-page application (SPA). It integrates
+with the generic builder system to walk directories, identify client page
+exports, and produce an in-memory bundle served via generated routes.
 
 ## Goals
 
-1. Process files exporting `ClientRoute`, `ClientDefaultRoute`, `ClientIndex`, and `ClientWrapper` tokens
+1. Process files exporting `ClientRoute`, `ClientDefaultRoute`, `ClientIndex`,
+   and `ClientWrapper` tokens
 2. Generate a TypeScript entrypoint file using ts-morph
 3. Bundle the application using esbuild with in-memory output
 4. Serve all assets (JS, CSS, sourcemaps) from memory via FullRoutes
@@ -20,9 +25,21 @@ The ClientBuilder is a Builder implementation that processes client-side Preact 
 - **Route Path Derivation**:
   - Remove file extension (`.ts`, `.tsx`)
   - Convert `[param]` segments to `:param` format
-  - Example: `/pages/users/[id].tsx` → `/users/:id`
-- **Storage**: Store `FileEntry` and derived route path in closure
+  - Example: `/pages/users/[id].tsx` → `/pages/users/:id`
+- **Storage**: Store `FileEntry`, export name, and derived route path in closure
 - **Route Creation**: Create GET route serving `index.html`
+
+#### Route Path Derivation Algorithm
+
+```typescript
+function deriveRoutePath(relative_path: string): string {
+  return relative_path
+    // Remove extension
+    .replace(/\.(ts|tsx)$/, '')
+    // Convert [param] to :param
+    .replace(/\[([^\]]+)\]/g, ':$1');
+}
+```
 
 ### ClientDefaultRoute
 
@@ -90,70 +107,231 @@ For each FileEntry with included extensions (`.ts`, `.tsx`):
 4. For ClientRoute tokens, create a placeholder FullRoute (actual handler set in `process_build`)
 5. Return empty routes array (routes created during `process_build`)
 
-### Route Path Derivation Algorithm
-
-```typescript
-function deriveRoutePath(relative_path: string): string {
-  return relative_path
-    // Remove extension
-    .replace(/\.(ts|tsx)$/, '')
-    // Convert [param] to :param
-    .replace(/\[([^\]]+)\]/g, ':$1');
-}
-```
 
 ## Phase 2: process_build
 
-### Step 1: Generate TypeScript Entrypoint
+### Step 1: Generate TypeScript Entrypoint with ts-morph
 
-Using ts-morph, create a source file with:
+The entrypoint file is generated as pure TypeScript (`.ts`, not `.tsx`) using
+Preact's `h()` function instead of JSX syntax. This avoids additional
+transpilation complexity and makes the generated code explicit.
+
+#### ts-morph Project Setup
 
 ```typescript
-// Generated imports
-import { render, hydrate } from 'preact';
-import { LocationProvider, Router, Route, ErrorBoundary, lazy } from 'preact-iso';
-import { Fragment } from 'preact';
+import { Project, VariableDeclarationKind, StructureKind } from "ts-morph";
 
-// Wrapper import (if exists)
-import { ExportName as Wrapper } from 'file:///absolute/path/to/wrapper.tsx';
+// Create a ts-morph Project instance
+// No tsconfig needed since we're generating code, not analyzing it
+const project = new Project({
+  useInMemoryFileSystem: false, // We write to the real filesystem via makeTempFile
+});
+```
 
-// Lazy route imports
-const Route0 = lazy(() => import('file:///absolute/path/to/page.tsx').then(m => ({ default: m.ExportName.component })));
-const Route1 = lazy(() => import('file:///absolute/path/to/other.tsx').then(m => ({ default: m.ExportName.component })));
-const DefaultRoute = lazy(() => import('file:///absolute/path/to/not-found.tsx').then(m => ({ default: m.ExportName.component })));
+#### Creating the Source File
 
-// App component
-function App() {
-  return (
-    <Wrapper>
-      <LocationProvider>
-        <ErrorBoundary>
-          <Router>
-            <Route path="/page" component={Route0} />
-            <Route path="/other" component={Route1} />
-            <Route path="/*" component={DefaultRoute} />
-          </Router>
-        </ErrorBoundary>
-      </LocationProvider>
-    </Wrapper>
-  );
-}
+First, obtain a temporary file path from the Filesystem interface, then create
+the source file at that path:
 
-// Hydrate if pre-rendered, otherwise render
-if (document.getElementById('app')?.hasChildNodes()) {
-  hydrate(<App />, document.getElementById('app')!);
-} else {
-  render(<App />, document.getElementById('app')!);
+```typescript
+// Get temp file path from BuildConfig.Filesystem
+const tempFilePath = await config.fs.makeTempFile({ suffix: ".ts" });
+
+// Create source file at the temp path
+// Using overwrite: true in case the temp file already exists
+const sourceFile = project.createSourceFile(tempFilePath, "", { overwrite: true });
+```
+
+#### Adding Import Declarations
+
+Use `addImportDeclaration()` to add each import. The method accepts an object
+with `moduleSpecifier` and either `defaultImport`, `namespaceImport`, or
+`namedImports`:
+
+```typescript
+// Import h, render, Fragment from preact
+sourceFile.addImportDeclaration({
+  moduleSpecifier: "preact",
+  namedImports: ["h", "render", "Fragment"],
+});
+
+// Import preact-iso components
+sourceFile.addImportDeclaration({
+  moduleSpecifier: "preact-iso",
+  namedImports: ["LocationProvider", "Router", "Route", "ErrorBoundary", "lazy"],
+});
+
+// Import wrapper component (if exists)
+if (Option.isSome(state.wrapper)) {
+  sourceFile.addImportDeclaration({
+    moduleSpecifier: `file://${state.wrapper.value.file_entry.absolute_path}`,
+    namedImports: [{
+      name: state.wrapper.value.export_name,
+      alias: "WrapperModule",
+    }],
+  });
 }
 ```
 
-If no `ClientWrapper` exists, use `Fragment` as the wrapper.
+#### Adding Lazy Route Variables
+
+Use `addVariableStatement()` with `VariableDeclarationKind.Const` to create
+lazy-loaded route constants:
+
+```typescript
+// Generate lazy imports for each route
+state.routes.forEach((route, index) => {
+  sourceFile.addVariableStatement({
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [{
+      name: `Route${index}`,
+      initializer: `lazy(() => import("file://${route.file_entry.absolute_path}").then(m => ({ default: m.${route.export_name}.component })))`,
+    }],
+  });
+});
+
+// Default route (if exists)
+if (Option.isSome(state.default_route)) {
+  sourceFile.addVariableStatement({
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [{
+      name: "DefaultRoute",
+      initializer: `lazy(() => import("file://${state.default_route.value.file_entry.absolute_path}").then(m => ({ default: m.${state.default_route.value.export_name}.component })))`,
+    }],
+  });
+}
+```
+
+#### Adding the App Function
+
+Use `addFunction()` with `setBodyText()` to create the App component. The body
+uses `h()` calls instead of JSX:
+
+```typescript
+const appFunction = sourceFile.addFunction({
+  name: "App",
+  isExported: false,
+});
+
+// Build the component tree using h() calls
+// Structure: Wrapper > LocationProvider > ErrorBoundary > Router > Routes
+appFunction.setBodyText(writer => {
+  writer.write("return ");
+
+  // Wrapper (or Fragment if none)
+  const wrapperComponent = Option.isSome(state.wrapper)
+    ? "WrapperModule.component"
+    : "Fragment";
+
+  writer.write(`h(${wrapperComponent}, null,`).indent(() => {
+    writer.write("h(LocationProvider, null,").indent(() => {
+      writer.write("h(ErrorBoundary, null,").indent(() => {
+        writer.write("h(Router, null,").indent(() => {
+          // Add each route
+          state.routes.forEach((route, index) => {
+            writer.writeLine(`h(Route, { path: "${route.route_path}", component: Route${index} }),`);
+          });
+          // Add default route if exists
+          if (Option.isSome(state.default_route)) {
+            writer.writeLine(`h(Route, { path: "/*", component: DefaultRoute }),`);
+          }
+        });
+        writer.write(")"); // Close Router
+      });
+      writer.write(")"); // Close ErrorBoundary
+    });
+    writer.write(")"); // Close LocationProvider
+  });
+  writer.write(")"); // Close Wrapper
+  writer.write(";");
+});
+```
+
+#### Adding the Render Statement
+
+Use `addStatements()` to add the final render call:
+
+```typescript
+sourceFile.addStatements(writer => {
+  writer.blankLine();
+  writer.writeLine("// Mount the application");
+  writer.write("if (document?.body)").block(() => {
+    writer.writeLine(`render(h(App, null), document.getElementById("app"));`);
+  });
+});
+```
+
+#### Getting the Generated Source Text
+
+After all manipulations, retrieve the full source text:
+
+```typescript
+const sourceText = sourceFile.getFullText();
+```
+
+#### Complete Generated Output Example
+
+The final generated `app.ts` file will look like:
+
+```typescript
+import { h, render, Fragment } from "preact";
+import { LocationProvider, Router, Route, ErrorBoundary, lazy } from "preact-iso";
+import { wrapper as WrapperModule } from "file:///absolute/path/to/wrapper.ts";
+
+const Route0 = lazy(() => import("file:///absolute/path/to/page.ts").then(m => ({ default: m.home.component })));
+const Route1 = lazy(() => import("file:///absolute/path/to/users/[id].ts").then(m => ({ default: m.user.component })));
+const DefaultRoute = lazy(() => import("file:///absolute/path/to/not-found.ts").then(m => ({ default: m.notFound.component })));
+
+function App() {
+  return h(WrapperModule.component, null,
+    h(LocationProvider, null,
+      h(ErrorBoundary, null,
+        h(Router, null,
+          h(Route, { path: "/page", component: Route0 }),
+          h(Route, { path: "/users/:id", component: Route1 }),
+          h(Route, { path: "/*", component: DefaultRoute }),
+        )
+      )
+    )
+  );
+}
+
+// Mount the application
+if (document?.body) {
+  render(h(App, null), document.body);
+}
+```
+
+If no `ClientWrapper` exists, `Fragment` is used as the wrapper component.
 
 ### Step 2: Write Temp File
 
-Use `config.fs.makeTempFile({ suffix: '.tsx' })` to create a temporary entrypoint file and write the generated source.
+After generating the source file content, write it to the filesystem using the
+BuildConfig's Filesystem interface:
+
+```typescript
+import * as Path from "@std/path";
+
+// Get the source text from ts-morph
+const sourceText = sourceFile.getFullText();
+
+// Convert to Uint8Array for the Filesystem.write method
+const encoder = new TextEncoder();
+const sourceBytes = encoder.encode(sourceText);
+
+// Write to the temp file path
+await config.fs.write(Path.parse(tempFilePath), sourceBytes);
+```
+
+Note: We use `config.fs.write()` rather than ts-morph's `sourceFile.save()`
+because the BuildConfig.Filesystem interface provides the abstraction layer
+for file operations in the builder system.
 
 ### Step 3: Bundle with esbuild
+
+The generated entrypoint is pure TypeScript using `h()` calls, so no JSX
+transformation is needed for the entrypoint itself. However, the lazy-imported
+route components may still use JSX, so we configure esbuild to handle both:
 
 ```typescript
 const result = await esbuild.build({
@@ -167,6 +345,7 @@ const result = await esbuild.build({
   treeShaking: options.treeShaking,
   sourcemap: options.sourcemap,
   target: options.target,
+  // JSX config for lazy-imported route components (which may use JSX)
   jsx: options.jsx,
   jsxImportSource: options.jsxImportSource,
   entryNames: '[name]-[hash]',
@@ -326,11 +505,106 @@ Route handlers create Responses from these stored values on each request.
 - `preact-render-to-string` - Server-side rendering for index.html
 - `preact` - UI framework
 
+## ts-morph API Reference
+
+The following ts-morph APIs are used in the ClientBuilder:
+
+### Project
+
+| Method | Description |
+|--------|-------------|
+| `new Project(options?)` | Create a new project instance |
+| `project.createSourceFile(path, text, options?)` | Create a source file at the given path |
+
+**Project Options:**
+- `useInMemoryFileSystem: boolean` - Use virtual filesystem (default: false)
+- `compilerOptions: object` - TypeScript compiler options
+- `tsConfigFilePath: string` - Path to tsconfig.json
+
+### SourceFile
+
+| Method | Description |
+|--------|-------------|
+| `sourceFile.addImportDeclaration(structure)` | Add an import statement |
+| `sourceFile.addImportDeclarations(structures[])` | Add multiple imports |
+| `sourceFile.addVariableStatement(structure)` | Add a variable declaration |
+| `sourceFile.addFunction(structure)` | Add a function declaration |
+| `sourceFile.addStatements(text \| writerFn)` | Add arbitrary statements |
+| `sourceFile.getFullText()` | Get the complete source text |
+| `sourceFile.save()` | Save to filesystem (not used; we use BuildConfig.fs) |
+
+### ImportDeclarationStructure
+
+```typescript
+{
+  moduleSpecifier: string;           // e.g., "preact"
+  defaultImport?: string;            // e.g., "React"
+  namespaceImport?: string;          // e.g., "* as Preact"
+  namedImports?: (string | {         // e.g., ["h", "render"]
+    name: string;
+    alias?: string;
+  })[];
+}
+```
+
+### VariableStatementStructure
+
+```typescript
+{
+  declarationKind: VariableDeclarationKind; // Const, Let, or Var
+  declarations: Array<{
+    name: string;
+    initializer?: string;
+    type?: string;
+  }>;
+}
+```
+
+### FunctionDeclarationStructure
+
+```typescript
+{
+  name: string;
+  isExported?: boolean;
+  isAsync?: boolean;
+  parameters?: Array<{ name: string; type?: string }>;
+  returnType?: string;
+  statements?: string | WriterFunction;
+}
+```
+
+### WriterFunction Pattern
+
+The writer function provides a fluent API for building code:
+
+```typescript
+sourceFile.addStatements(writer => {
+  writer
+    .writeLine("// Comment")
+    .write("if (condition)")
+    .block(() => {
+      writer.writeLine("doSomething();");
+    })
+    .blankLine()
+    .write("return value;");
+});
+```
+
+| Writer Method | Description |
+|---------------|-------------|
+| `write(text)` | Write text without newline |
+| `writeLine(text)` | Write text with newline |
+| `blankLine()` | Insert empty line |
+| `block(fn)` | Write `{ }` block with indented content |
+| `indent(fn)` | Indent content without braces |
+| `newLine()` | Insert newline |
+| `quote(text)` | Write quoted string |
+
 ## Example Usage
 
 ```typescript
 // routes/pages/index.tsx
-import { client_route } from '@pick/tokens';
+import { client_route } from '@baetheus/pick/tokens';
 
 function HomePage() {
   return <h1>Welcome</h1>;

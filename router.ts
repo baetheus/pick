@@ -1,12 +1,12 @@
-import type { Effect } from "fun/effect";
+import type { Effect } from "@baetheus/fun/effect";
 
 import type { StatusCode, StatusText } from "./status.ts";
 import type { Header } from "./unstable-header.ts";
 
-import * as E from "fun/effect";
-import { match } from "fun/either";
-import { map as mapRecord } from "fun/record";
-import { identity, pipe } from "fun/fn";
+import * as E from "@baetheus/fun/effect";
+import { match } from "@baetheus/fun/either";
+import { map as mapRecord } from "@baetheus/fun/record";
+import { identity, pipe } from "@baetheus/fun/fn";
 
 import { HEADER } from "./unstable-header.ts";
 import { STATUS_CODE, STATUS_TEXT } from "./status.ts";
@@ -761,9 +761,9 @@ export type AnyRoute = Route<any>;
  * @example
  * ```ts
  * import { route, router, right, context } from "./router.ts";
- * import { right as rightEither, left as leftEither } from "fun/either";
- * import { todo } from "fun/fn";
- * import * as E from "fun/effect";
+ * import { right as rightEither, left as leftEither } from "@baetheus/fun/either";
+ * import { todo } from "@baetheus/fun/fn";
+ * import * as E from "@baetheus/fun/effect";
  *
  * type User = {
  *   id: string;
@@ -947,7 +947,7 @@ export function left<D, R extends RouteString = RouteString>(
  * @example
  * ```ts
  * import type { Middleware } from "./router.ts";
- * import { left as leftEither } from "fun/either";
+ * import { left as leftEither } from "@baetheus/fun/either";
  *
  * // Authentication middleware
  * const authMiddleware: Middleware<{ user?: string }> = (handler) => {
@@ -1077,7 +1077,7 @@ export type RouterConfig<D> = {
  * @example
  * ```ts
  * import { router, right, context, STATUS_CODE, text } from "./router.ts";
- * import { todo } from "fun/fn";
+ * import { todo } from "@baetheus/fun/fn";
  *
  * type User = {
  *   id: string;

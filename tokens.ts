@@ -178,7 +178,7 @@ type ClientPageSymbol = typeof ClientPageSymbol;
  *
  * @since 0.3.0
  */
-type ClientPage<T extends string, P = unknown> = {
+export type ClientPage<T extends string = string, P = unknown> = {
   readonly type: ClientPageSymbol;
   readonly tag: T;
   readonly component: FunctionComponent<P>;

@@ -1,7 +1,7 @@
 import * as Tokens from "@baetheus/pick/tokens";
 
-function HomePage() {
-  return <div>Home Page</div>;
+function Page() {
+  return <div>Another Page!</div>;
 }
 
-export const home = Tokens.client_route.create(HomePage);
+export const page = Tokens.client_route.create(Page);

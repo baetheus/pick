@@ -9,7 +9,6 @@ function IndexPage({ scripts, styles, title }: ClientIndexParameters) {
         {styles.map((s) => <link rel="stylesheet" href={s} />)}
       </head>
       <body>
-        <div id="app" />
         {scripts.map((s) => <script type="module" src={s} />)}
       </body>
     </html>

@@ -1,6 +1,6 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"

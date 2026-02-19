@@ -29,7 +29,7 @@ export function static_builder(
 ): Builder.Builder {
   return {
     name,
-    process_build: (routes) => Effect.right(routes),
+    process_build: () => Effect.right([]),
     process_file: (file_entry) => {
       // Bail on excluded extensions
       if (exclude_extensions.includes(file_entry.parsed_path.ext)) {

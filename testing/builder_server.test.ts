@@ -6,7 +6,7 @@ import * as Path from "@std/path";
 
 import * as Builder from "../builder.ts";
 import * as Router from "../router.ts";
-import { safe_import, server_builder } from "../builder_server.ts";
+import { server_builder } from "../builder_server.ts";
 import { createMockFilesystem } from "./builder.test.ts";
 
 // Get absolute path to fixtures directory
@@ -23,41 +23,6 @@ async function evaluateEffect<A>(
   const [result] = await effect(config);
   return result;
 }
-
-// ============================================================================
-// safe_import tests
-// ============================================================================
-
-Deno.test("safe_import - imports valid module", async () => {
-  const fs = createMockFilesystem();
-  const config: Builder.BuildConfig = {
-    root_path: FIXTURES_DIR,
-    fs,
-    builders: [],
-  };
-
-  const parsed = Path.parse(`${FIXTURES_DIR}/server_route.ts`);
-  const result = await evaluateEffect(safe_import(parsed), config);
-
-  assertEquals(Either.isRight(result), true);
-  if (Either.isRight(result)) {
-    assertEquals("hello" in result.right, true);
-  }
-});
-
-Deno.test("safe_import - returns error for non-existent file", async () => {
-  const fs = createMockFilesystem();
-  const config: Builder.BuildConfig = {
-    root_path: FIXTURES_DIR,
-    fs,
-    builders: [],
-  };
-
-  const parsed = Path.parse(`${FIXTURES_DIR}/does_not_exist.ts`);
-  const result = await evaluateEffect(safe_import(parsed), config);
-
-  assertEquals(Either.isLeft(result), true);
-});
 
 // ============================================================================
 // server_builder tests
@@ -86,6 +51,7 @@ Deno.test("server_builder - skips non-included extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -111,6 +77,7 @@ Deno.test("server_builder - creates route from PartialRoute export", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -139,6 +106,7 @@ Deno.test("server_builder - creates multiple routes from multi-export file", asy
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -172,6 +140,7 @@ Deno.test("server_builder - returns empty for files without routes", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -203,6 +172,7 @@ Deno.test("server_builder - process_build returns empty (no new routes)", async 
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -232,6 +202,7 @@ Deno.test("server_builder - route handler returns correct response", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -282,6 +253,7 @@ Deno.test("server_builder - applies middleware to routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -322,6 +294,7 @@ Deno.test("server_builder - custom include_extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 

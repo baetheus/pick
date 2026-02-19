@@ -50,6 +50,7 @@ Deno.test("static_builder - creates route for file", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -79,6 +80,7 @@ Deno.test("static_builder - excludes files with excluded extensions", async () =
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -110,6 +112,7 @@ Deno.test("static_builder - process_build returns empty (no new routes)", async 
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -141,6 +144,7 @@ Deno.test("static_builder - route handler reads file content", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -170,7 +174,10 @@ Deno.test("static_builder - route handler reads file content", async () => {
 
 Deno.test("static_builder - sets Content-Type header from mime_type", async () => {
   const fs = createMockFilesystem({
-    "/root/image.png": mockFile(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), "image/png"),
+    "/root/image.png": mockFile(
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+      "image/png",
+    ),
   });
 
   const builder = static_builder({});
@@ -183,6 +190,7 @@ Deno.test("static_builder - sets Content-Type header from mime_type", async () =
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -223,6 +231,7 @@ Deno.test("static_builder - handles files without mime_type", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -267,12 +276,19 @@ Deno.test("static_builder - multiple exclude extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
   const tsResult = await evaluateEffect(builder.process_file(tsEntry), config);
-  const tsxResult = await evaluateEffect(builder.process_file(tsxEntry), config);
-  const cssResult = await evaluateEffect(builder.process_file(cssEntry), config);
+  const tsxResult = await evaluateEffect(
+    builder.process_file(tsxEntry),
+    config,
+  );
+  const cssResult = await evaluateEffect(
+    builder.process_file(cssEntry),
+    config,
+  );
 
   // .ts and .tsx should be excluded
   assertEquals(Either.isRight(tsResult) && tsResult.right.length === 0, true);
@@ -293,6 +309,7 @@ Deno.test("static_builder - integration with build function", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 

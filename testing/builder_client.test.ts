@@ -4,7 +4,6 @@ import * as Option from "@baetheus/fun/option";
 import * as Path from "@std/path";
 
 import * as Builder from "../builder.ts";
-import * as Router from "../router.ts";
 import { client_builder } from "../builder_client.ts";
 import { deno_fs } from "../deno_fs.ts";
 import { createMockFilesystem } from "./builder.test.ts";
@@ -51,6 +50,7 @@ Deno.test("client_builder - skips non-included extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -80,6 +80,7 @@ Deno.test("client_builder - process_file returns empty (routes created in proces
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -100,6 +101,7 @@ Deno.test("client_builder - full test", async () => {
   const result = await Builder.build({
     root_path: FIXTURES_DIR,
     fs: deno_fs,
+    unsafe_import: (path) => import(path),
     builders: [client_builder()],
   });
 

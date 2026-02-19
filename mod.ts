@@ -9,10 +9,12 @@ import * as BuilderStatic from "./builder_static.ts";
 export default function build(
   root_path: string,
   site_name: string,
+  unsafe_import: (path: string) => Promise<unknown>,
 ): Promise<Either<AnyErr, Builder.SiteBuildResult>> {
   return Builder.build({
     root_path,
     fs: DenoFS.deno_fs,
+    unsafe_import,
     builders: [
       BuilderClient.client_builder({ title: site_name }),
       BuilderServer.server_builder({}),

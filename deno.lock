@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@baetheus/fun@*": "2.3.5",
     "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.8",
+    "jsr:@baetheus/pick@0.4": "0.4.0",
     "jsr:@deno/cache-dir@0.13.2": "0.13.2",
     "jsr:@deno/emit@*": "0.46.0",
     "jsr:@luca/esbuild-deno-loader@~0.11.1": "0.11.1",
@@ -37,6 +38,12 @@
     },
     "@baetheus/fun@3.0.0-rc.8": {
       "integrity": "d84c6f3d403bd91c397c55a5736b1ea39e9054f7a8b0fa689a01743d3657b1ea"
+    },
+    "@baetheus/pick@0.4.0": {
+      "integrity": "3ae0e89b76e93f3ec5e21ef70e5ffc4e1dd3803f25d5824b067ffddf26fb066b",
+      "dependencies": [
+        "jsr:@baetheus/fun@^3.0.0-rc.8"
+      ]
     },
     "@deno/cache-dir@0.13.2": {
       "integrity": "c22419dfe27ab85f345bee487aaaadba498b005cce3644e9d2528db035c5454d",

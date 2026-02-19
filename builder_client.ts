@@ -36,22 +36,6 @@ type ClientBuilderState = {
   indices: ClientRouteEntry<"ClientIndex", Tokens.ClientIndexParameters>[];
 };
 
-function safe_import(
-  parsed_path: Path.ParsedPath,
-): Builder.BuildEffect<Record<string, unknown>> {
-  return Effect.tryCatch(
-    async (_) => {
-      const result = await import("file://" + Path.format(parsed_path));
-      if (Refinement.isRecord(result)) {
-        return result;
-      }
-      throw new Error("Import did not return a record type.");
-    },
-    (error) =>
-      client_builder_error("Unable to import file.", { error, parsed_path }),
-  );
-}
-
 function strip_extension(path: string): string {
   const parsed_path = Path.parse(Path.normalize(path));
   const stripped = Path.join(parsed_path.dir, parsed_path.name);
@@ -343,7 +327,7 @@ export function client_builder(
       }
 
       return pipe(
-        safe_import(file_entry.parsed_path),
+        Builder.safe_import(file_entry.parsed_path),
         Effect.flatmap((exports) => {
           const export_pairs = Object.entries(exports);
 

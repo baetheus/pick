@@ -13,6 +13,7 @@ import * as Effect from "@baetheus/fun/effect";
 import * as Either from "@baetheus/fun/either";
 import * as Err from "@baetheus/fun/err";
 import * as Option from "@baetheus/fun/option";
+import * as Refinement from "@baetheus/fun/refinement";
 import { flow, pipe } from "@baetheus/fun/fn";
 
 import * as Path from "@std/path";
@@ -155,6 +156,7 @@ export type Builder = {
 export type BuildConfig = {
   readonly root_path: string;
   readonly fs: Filesystem;
+  readonly unsafe_import: (path: string) => Promise<unknown>;
   readonly builders: readonly Builder[];
 };
 
@@ -223,6 +225,24 @@ export type SiteBuildResult = {
 };
 
 const traverse = Array.traverse(Effect.getFlatmappableEffect<[BuildConfig]>());
+
+export function safe_import(
+  path: Path.ParsedPath,
+): BuildEffect<Record<string, unknown>> {
+  return Effect.tryCatch(
+    async (config) => {
+      const raw_import = await config.unsafe_import(
+        "file://" + Path.format(path),
+      );
+      if (Refinement.isRecord(raw_import)) {
+        return raw_import;
+      }
+      throw new Error("Unable to parse import object from unsafe_import");
+    },
+    (error, args) =>
+      build_error("Error thrown by unsafe_import", { error, args }),
+  );
+}
 
 /**
  * Builds a site from a directory.

@@ -1,7 +1,6 @@
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import * as Either from "@baetheus/fun/either";
 import * as Effect from "@baetheus/fun/effect";
-import * as Err from "@baetheus/fun/err";
 import * as Option from "@baetheus/fun/option";
 import * as Path from "@std/path";
 import * as Refinement from "@baetheus/fun/refinement";
@@ -310,6 +309,7 @@ Deno.test("build - returns error when no builders specified", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [],
   };
 
@@ -339,6 +339,7 @@ Deno.test("build - processes files with builder", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [testBuilder],
   };
 
@@ -387,6 +388,7 @@ Deno.test("build - aggregates routes from multiple builders", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder1, builder2],
   };
 
@@ -429,6 +431,7 @@ Deno.test("build - process_build receives all routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 
@@ -470,6 +473,7 @@ Deno.test("build - process_build can add additional routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
+    unsafe_import: (path) => import(path),
     builders: [builder],
   };
 

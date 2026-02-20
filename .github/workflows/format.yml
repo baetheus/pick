@@ -6,7 +6,7 @@ jobs:
   format:
     strategy:
       matrix:
-        deno: ["v2.2.12"]
+        deno: ["v2.6.12"]
         os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}

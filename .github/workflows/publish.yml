@@ -17,7 +17,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: "v2.2.12"
+          deno-version: "v2.6.12"
 
       - name: Publish package
         run: deno publish

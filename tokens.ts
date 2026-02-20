@@ -24,13 +24,15 @@ type PartialRouteSymbol = typeof PartialRouteSymbol;
  *
  * @since 0.1.0
  */
-export type PartialRouteConfig<P> = {
-  readonly params: Schema<P>;
+export type PartialRouteConfig<P, B = unknown, O = unknown> = {
+  readonly params?: Schema<P>;
+  readonly body?: Schema<B>;
+  readonly output?: Schema<O>;
   readonly handler: Handler;
 };
 
 /**
- * A partial route definition containing method, handler, and optional schema.
+ * A partial route definition containing method, handler, and optional schemas.
  *
  * @example
  * ```ts
@@ -47,6 +49,8 @@ export type PartialRoute = {
   readonly method: Methods;
   readonly handler: Handler;
   readonly params_schema: Option.Option<Schema<unknown>>;
+  readonly body_schema: Option.Option<Schema<unknown>>;
+  readonly output_schema: Option.Option<Schema<unknown>>;
 };
 
 /**
@@ -57,7 +61,7 @@ export type PartialRoute = {
  * import { partial_route } from "@baetheus/pick/tokens";
  * import * as Option from "@baetheus/fun/option";
  *
- * const route = partial_route("GET", myHandler, Option.none);
+ * const route = partial_route("GET", myHandler, Option.none, Option.none, Option.none);
  * ```
  *
  * @since 0.1.0
@@ -66,8 +70,17 @@ export function partial_route(
   method: Methods,
   handler: Handler,
   params_schema: Option.Option<Schema<unknown>> = Option.none,
+  body_schema: Option.Option<Schema<unknown>> = Option.none,
+  output_schema: Option.Option<Schema<unknown>> = Option.none,
 ): PartialRoute {
-  return { type: PartialRouteSymbol, method, handler, params_schema };
+  return {
+    type: PartialRouteSymbol,
+    method,
+    handler,
+    params_schema,
+    body_schema,
+    output_schema,
+  };
 }
 
 /**
@@ -108,7 +121,9 @@ export function is_partial_route(value: unknown): value is PartialRoute {
  */
 export type MethodBuilder = {
   (handler: Handler): PartialRoute;
-  <P>(config: PartialRouteConfig<P>): PartialRoute;
+  <P, B = unknown, O = unknown>(
+    config: PartialRouteConfig<P, B, O>,
+  ): PartialRoute;
 };
 
 /**
@@ -116,10 +131,11 @@ export type MethodBuilder = {
  *
  * @since 0.1.0
  */
-function is_config<P>(
-  input: Handler | PartialRouteConfig<P>,
-): input is PartialRouteConfig<P> {
-  return Refinement.isRecord(input) && "params" in input && "handler" in input;
+function is_config<P, B, O>(
+  input: Handler | PartialRouteConfig<P, B, O>,
+): input is PartialRouteConfig<P, B, O> {
+  return Refinement.isRecord(input) && "handler" in input &&
+    ("params" in input || "body" in input || "output" in input);
 }
 
 /**
@@ -127,24 +143,30 @@ function is_config<P>(
  *
  * Supports two calling conventions:
  * - `method(handler)` - params is `unknown`
- * - `method({ params, handler })` - params typed via schema
+ * - `method({ params, body, output, handler })` - schemas typed via schema
  *
  * @since 0.1.0
  */
 function create_method_builder(method: Methods): MethodBuilder {
   function builder(handler: Handler): PartialRoute;
-  function builder<P>(config: PartialRouteConfig<P>): PartialRoute;
-  function builder<P>(
-    input: Handler | PartialRouteConfig<P>,
+  function builder<P, B, O>(config: PartialRouteConfig<P, B, O>): PartialRoute;
+  function builder<P, B, O>(
+    input: Handler | PartialRouteConfig<P, B, O>,
   ): PartialRoute {
     if (is_config(input)) {
       return partial_route(
         method,
         input.handler,
-        Option.some(input.params as Schema<unknown>),
+        input.params
+          ? Option.some(input.params as Schema<unknown>)
+          : Option.none,
+        input.body ? Option.some(input.body as Schema<unknown>) : Option.none,
+        input.output
+          ? Option.some(input.output as Schema<unknown>)
+          : Option.none,
       );
     }
-    return partial_route(method, input, Option.none);
+    return partial_route(method, input, Option.none, Option.none, Option.none);
   }
   return builder;
 }

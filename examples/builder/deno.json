@@ -8,7 +8,7 @@
   },
   "imports": {
     "@baetheus/fun": "jsr:@baetheus/fun@^3.0.0-rc.8",
-    "@baetheus/pick": "jsr:@baetheus/pick@^0.14.0",
+    "@baetheus/pick": "jsr:@baetheus/pick@^0.15.0",
     "preact": "npm:preact@10.27.2",
     "preact-iso": "npm:preact-iso@^2.11.1"
   },

@@ -5,6 +5,7 @@ import * as DenoFS from "./deno_fs.ts";
 import * as BuilderClient from "./builder_client.ts";
 import * as BuilderServer from "./builder_server.ts";
 import * as BuilderStatic from "./builder_static.ts";
+import * as BuilderOpenAPI from "./builder_openapi.ts";
 
 /**
  * Builds a site from a directory using the default Deno filesystem and
@@ -54,6 +55,9 @@ export default function build(
       BuilderClient.client_builder({ title: site_name }),
       BuilderServer.server_builder({}),
       BuilderStatic.static_builder({ exclude_extensions: [".ts", ".tsx"] }),
+      BuilderOpenAPI.openapi_builder({
+        info: { title: site_name, version: "latest" },
+      }),
     ],
   });
 }

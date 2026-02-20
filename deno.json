@@ -1,6 +1,6 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "unstable": [
     "bundle"
   ],
@@ -13,6 +13,7 @@
     "./router": "./router.ts",
     "./builder": "./builder.ts",
     "./builder_client": "./builder_client.ts",
+    "./builder_openapi": "./builder_openapi.ts",
     "./builder_server": "./builder_server.ts",
     "./builder_static": "./builder_static.ts",
     "./tokens": "./tokens.ts"

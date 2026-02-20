@@ -8,6 +8,8 @@
  * @since 0.1.0
  */
 
+import type { Schema } from "@baetheus/fun/schemable";
+
 import * as Array from "@baetheus/fun/array";
 import * as Effect from "@baetheus/fun/effect";
 import * as Either from "@baetheus/fun/either";
@@ -141,6 +143,9 @@ export type FullRoute = {
   readonly absolute_path: string;
   readonly parsed_path: Path.ParsedPath;
   readonly route: Router.Route;
+  readonly params_schema: Option.Option<Schema<unknown>>;
+  readonly body_schema: Option.Option<Schema<unknown>>;
+  readonly output_schema: Option.Option<Schema<unknown>>;
 };
 
 /**
@@ -165,12 +170,18 @@ export function full_route(
   builder: string,
   parsed_path: Path.ParsedPath,
   route: Router.Route,
+  params_schema: Option.Option<Schema<unknown>> = Option.none,
+  body_schema: Option.Option<Schema<unknown>> = Option.none,
+  output_schema: Option.Option<Schema<unknown>> = Option.none,
 ): FullRoute {
   return {
     builder,
     route,
     parsed_path,
     absolute_path: Path.format(parsed_path),
+    params_schema,
+    body_schema,
+    output_schema,
   };
 }
 
@@ -328,12 +339,16 @@ function strip_extension(path: string): string {
 export function from_partial_route(
   builder: string,
   file_entry: FileEntry,
-  { method, handler }: Tokens.PartialRoute,
+  { method, handler, params_schema, body_schema, output_schema }:
+    Tokens.PartialRoute,
 ): FullRoute {
   return full_route(
     builder,
     file_entry.parsed_path,
     Router.route(method, strip_extension(file_entry.relative_path), handler),
+    params_schema,
+    body_schema,
+    output_schema,
   );
 }
 
@@ -518,15 +533,20 @@ export function build(
     // Flatten SiteRoutes[][] into SiteRoutes (one layer per traverse)
     Effect.map(flow(Array.join, Array.join)),
     Effect.flatmap((site_routes) =>
-      pipe(
-        // Give each builder the full site_routes array to make additional routes
-        config.builders.map((builder) => builder.process_build(site_routes)),
-        traverse((routes_effect) => routes_effect),
-        // Merge the file routes with the build routes.
-        Effect.map(
-          (build_routes) => [...site_routes, ...Array.join(build_routes)],
-        ),
-      )
+      Effect.getsEither(async (config) => {
+        const routes = [...site_routes];
+        // Loop through each builder.process_build and aggregate
+        // the returned SiteRoutes
+        for (const builder of config.builders) {
+          const [result] = await builder.process_build(routes)(config);
+          // Bail early if a builder errors
+          if (Either.isLeft(result)) {
+            return result;
+          }
+          routes.push(...result.right);
+        }
+        return Either.right(routes);
+      })
     ),
     Effect.map((site_routes) => ({ config, site_routes })),
     Effect.evaluate(config),

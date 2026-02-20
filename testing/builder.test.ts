@@ -441,7 +441,7 @@ Deno.test("build - process_build receives all routes", async () => {
 
   await Builder.build(config);
 
-  assertEquals(receivedRoutes.length, 1);
+  assertEquals(receivedRoutes.length, 2);
   assertEquals(receivedRoutes[0].route.pathname, "/test");
 });
 

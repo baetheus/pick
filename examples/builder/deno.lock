@@ -69,12 +69,12 @@
   "workspace": {
     "dependencies": [
       "jsr:@baetheus/fun@^3.0.0-rc.8",
-      "jsr:@baetheus/pick@0.8",
+      "jsr:@baetheus/pick@0.15",
       "npm:preact-iso@^2.11.1",
       "npm:preact@10.27.2"
     ],
     "links": {
-      "jsr:@baetheus/pick@0.12.0": {
+      "jsr:@baetheus/pick@0.15.0": {
         "dependencies": [
           "jsr:@baetheus/fun@^3.0.0-rc.8",
           "jsr:@baetheus/pick@0.11",

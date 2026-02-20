@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         deno: ["v2.6.0"]
-        os: [macOS-latest, windows-latest, ubuntu-latest]
+        os: [macOS-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 

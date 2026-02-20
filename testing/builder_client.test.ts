@@ -23,6 +23,10 @@ async function evaluateEffect<A>(
   return result;
 }
 
+function unsafe_import(path: string): Promise<unknown> {
+  return import(path);
+}
+
 // ============================================================================
 // client_builder basic tests
 // ============================================================================
@@ -50,7 +54,7 @@ Deno.test("client_builder - skips non-included extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -80,7 +84,7 @@ Deno.test("client_builder - process_file returns empty (routes created in proces
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -101,7 +105,7 @@ Deno.test("client_builder - full test", async () => {
   const result = await Builder.build({
     root_path: FIXTURES_DIR,
     fs: deno_fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [client_builder()],
   });
 

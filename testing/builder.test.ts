@@ -17,6 +17,10 @@ const isErr = Refinement.struct({
   tag: Refinement.string,
 });
 
+function unsafe_import(path: string): Promise<unknown> {
+  return import(path);
+}
+
 // ============================================================================
 // In-Memory Mock Filesystem
 // ============================================================================
@@ -309,7 +313,7 @@ Deno.test("build - returns error when no builders specified", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [],
   };
 
@@ -339,7 +343,7 @@ Deno.test("build - processes files with builder", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [testBuilder],
   };
 
@@ -388,7 +392,7 @@ Deno.test("build - aggregates routes from multiple builders", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder1, builder2],
   };
 
@@ -431,7 +435,7 @@ Deno.test("build - process_build receives all routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -473,7 +477,7 @@ Deno.test("build - process_build can add additional routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 

@@ -43,10 +43,11 @@ const client_builder_error = Err.err("ClientBuilderError");
  *
  * @since 0.3.0
  */
-export type ClientBuilderOptions = Omit<Deno.bundle.Options, "entrypoints"> & {
+export type ClientBuilderOptions = {
   readonly name?: string;
   readonly title?: string;
   readonly include_extensions?: string[];
+  readonly bundler_options?: Deno.bundle.Options;
 };
 
 type ClientRouteEntry<T extends string, P = unknown> = {
@@ -351,6 +352,141 @@ function check_builder_state(
   return Effect.right(state);
 }
 
+function create_entrypoint(
+  state: ClientBuilderState,
+): Builder.BuildEffect<string> {
+  return Effect.gets(async (config) => {
+    const tempFilePath = await config.fs.makeTempFile({
+      prefix: "bundle-",
+      suffix: ".ts",
+    });
+    const sourceText = generateEntrypointSource(state);
+    const encoder = new TextEncoder();
+    const sourceBytes = encoder.encode(sourceText);
+    await config.fs.write(Path.parse(tempFilePath), sourceBytes);
+    return tempFilePath;
+  });
+}
+
+function create_bundle_assets(
+  entrypoint: string,
+  client_config: Deno.bundle.Options,
+): Builder.BuildEffect<Map<string, Uint8Array>> {
+  return pipe(
+    safe_bundle({
+      ...client_config,
+      entrypoints: [entrypoint],
+      write: false,
+    }),
+    Effect.flatmap((results) => {
+      if (results.success) {
+        const map = new Map<string, Uint8Array>();
+        for (const file of results.outputFiles ?? []) {
+          if (file.contents !== undefined) {
+            map.set(
+              file.path === "<stdout>" ? `bundle-${file.hash}.js` : file.path,
+              file.contents,
+            );
+          }
+        }
+        return Effect.right(map);
+      }
+      return Effect.left(
+        client_builder_error("Deno.bundle returned errors", {
+          results,
+          entrypoint,
+        }),
+      );
+    }),
+  );
+}
+
+function create_index_handler(
+  bundle_assets: Map<string, Uint8Array>,
+  state: ClientBuilderState,
+  title: string,
+): Builder.BuildEffect<Router.Handler> {
+  const assets = Array.from(bundle_assets.keys());
+  const scripts = assets.filter((path) => path.endsWith(".js"));
+  const styles = assets.filter((path) => path.endsWith(".css"));
+  let html: string;
+
+  if (state.indices.length > 0) {
+    const index = state.indices[0];
+    const IndexComponent = index.export_pair[1].component;
+    html = renderToString(h(IndexComponent, {
+      title,
+      scripts,
+      styles,
+    }));
+  } else {
+    html = generateDefaultHtml(scripts, styles, title);
+  }
+  return Effect.wrap(
+    Effect.gets(() => Router.html(html)) as Router.Handler,
+  );
+}
+
+function create_routes(
+  config: Builder.BuildConfig,
+  indexHandler: Router.Handler,
+  state: ClientBuilderState,
+  bundle_assets: Map<string, Uint8Array>,
+  builder_name: string,
+): Builder.BuildEffect<Builder.FullRoute[]> {
+  const routes: Builder.FullRoute[] = [];
+
+  // Client Root Route /
+  routes.push(
+    Builder.full_route(
+      builder_name,
+      Path.parse(config.root_path),
+      Router.route("GET", "/", indexHandler),
+    ),
+  );
+
+  // Client routes for child pages - all serve index.html for SPA behavior
+  for (const route of state.routes) {
+    routes.push(
+      Builder.full_route(
+        builder_name,
+        route.file_entry.parsed_path,
+        Router.route(
+          "GET",
+          strip_extension(route.file_entry.relative_path),
+          indexHandler,
+        ),
+      ),
+    );
+  }
+
+  // Bundle assets - serve from memory
+  for (const [assetPath, contents] of bundle_assets) {
+    const parsed_path = Path.parse(Path.normalize(assetPath));
+    const mimeType = contentType(parsed_path.ext);
+    const assetBytes = new Uint8Array(contents);
+    const assetHandler: Router.Handler = Effect.gets(() =>
+      Router.response(
+        assetBytes,
+        Router.response_init(
+          Router.STATUS_CODE.OK,
+          mimeType ? [[Router.HEADER.ContentType, mimeType]] : [],
+        ),
+      )
+    );
+
+    routes.push(
+      Builder.full_route(
+        builder_name,
+        Path.parse(assetPath),
+        Router.route("GET", assetPath, assetHandler),
+      ),
+    );
+  }
+
+  return Effect.wrap(routes);
+}
+
 /**
  * Creates a client SPA builder that processes preact components and generates
  * a bundled single-page application with client-side routing.
@@ -381,13 +517,9 @@ export function client_builder(
     name: "DefaultClientBuilder",
     title: "My Site",
     include_extensions: [".ts", ".tsx"],
-    minify: true,
-    codeSplitting: true,
-    inlineImports: true,
-    sourcemap: "linked" as const,
-    outputDir: "./",
     ..._client_config,
   };
+
   // Closure state for accumulating client routes and components
   const state: ClientBuilderState = {
     routes: [],
@@ -429,161 +561,45 @@ export function client_builder(
         }),
       );
     },
-
     process_build: (_routes) =>
       pipe(
         Effect.get<[Builder.BuildConfig]>(),
+        Effect.map((config) => config[0]),
         Effect.bindTo("config"),
         Effect.bind("state", () => check_builder_state(state)),
-        Effect.bind("entrypoint", ({ state }) =>
-          Effect.gets(async (config) => {
-            const tempFilePath = await config.fs.makeTempFile({
-              prefix: "bundle-",
-              suffix: ".ts",
-            });
-            const sourceText = generateEntrypointSource(state);
-
-            const encoder = new TextEncoder();
-            const sourceBytes = encoder.encode(sourceText);
-            await config.fs.write(Path.parse(tempFilePath), sourceBytes);
-            return tempFilePath;
+        Effect.bind("entrypoint", ({ state }) => create_entrypoint(state)),
+        Effect.bind("bundle_assets", ({ config, entrypoint }) =>
+          create_bundle_assets(entrypoint, {
+            // Defaults
+            format: "esm",
+            minify: true,
+            codeSplitting: true,
+            inlineImports: true,
+            packages: "bundle",
+            sourcemap: "linked",
+            platform: "browser",
+            // Custom overrides
+            ...client_config.bundler_options ?? {},
+            // Requirements
+            outputDir: config.root_path,
+            entrypoints: [entrypoint],
           })),
-        Effect.bind(
-          "bundle_assets",
-          ({ entrypoint }) =>
-            pipe(
-              safe_bundle({
-                ...client_config,
-                entrypoints: [entrypoint],
-                write: false,
-              }),
-              Effect.flatmap((results) => {
-                if (results.success) {
-                  const map = new Map<string, Uint8Array>();
-                  for (const file of results.outputFiles ?? []) {
-                    if (file.contents !== undefined) {
-                      // Deno bundle nonsnse
-                      map.set(
-                        file.path === "<stdout>"
-                          ? `bundle-${file.hash}.js`
-                          : file.path,
-                        file.contents,
-                      );
-                    }
-                  }
-
-                  return Effect.right(map);
-                }
-                return Effect.left(
-                  client_builder_error("Deno.bundle returned errors", {
-                    results,
-                    entrypoint,
-                  }),
-                );
-              }),
-            ),
-        ),
-        Effect.bind(
-          "indexHandler",
-          ({ bundle_assets, state }) => {
-            const assets = Array.from(bundle_assets.keys());
-            const scripts = assets.filter((path) => path.endsWith(".js"));
-            const styles = assets.filter((path) => path.endsWith(".css"));
-            let html: string;
-
-            if (state.indices.length > 0) {
-              const index = state.indices[0];
-              const IndexComponent = index.export_pair[1].component;
-              html = renderToString(h(IndexComponent, {
-                title: client_config.title,
-                scripts,
-                styles,
-              }));
-            } else {
-              html = generateDefaultHtml(
-                scripts,
-                styles,
-                client_config.title,
-              );
-            }
-            return Effect.wrap(
-              Effect.gets(() => Router.html(html)) as Router.Handler,
-            );
-          },
-        ),
+        Effect.bind("indexHandler", ({ bundle_assets, state }) =>
+          create_index_handler(bundle_assets, state, client_config.title)),
         Effect.bind(
           "routes",
-          ({ indexHandler, state, bundle_assets }) => {
-            const routes: Builder.FullRoute[] = [];
-
-            // Client Root Route /
-            // routes.push(
-            //   Builder.full_route(
-            //     client_config.name,
-            //     Path.parse(config[0].root_path),
-            //     Router.route("GET", "/", indexHandler),
-            //   ),
-            // );
-
-            // Client routes for child pages - all serve index.html for SPA behavior
-            for (const route of state.routes) {
-              routes.push(
-                Builder.full_route(
-                  client_config.name,
-                  route.file_entry.parsed_path,
-                  Router.route(
-                    "GET",
-                    strip_extension(route.file_entry.relative_path),
-                    indexHandler,
-                  ),
-                ),
-              );
-            }
-
-            // Bundle assets - serve from memory
-            for (const [assetPath, contents] of bundle_assets) {
-              const parsed_path = Path.parse(
-                Path.normalize(assetPath),
-              );
-              const mimeType = contentType(parsed_path.ext);
-              // Create a new Uint8Array to ensure proper BodyInit compatibility
-              const assetBytes = new Uint8Array(contents);
-              const assetHandler: Router.Handler = Effect.gets(() =>
-                Router.response(
-                  assetBytes,
-                  Router.response_init(
-                    Router.STATUS_CODE.OK,
-                    mimeType ? [[Router.HEADER.ContentType, mimeType]] : [],
-                  ),
-                )
-              );
-
-              routes.push(
-                Builder.full_route(
-                  client_config.name,
-                  Path.parse(assetPath),
-                  Router.route("GET", assetPath, assetHandler),
-                ),
-              );
-            }
-
-            // Default route (SPA fallback) - serves index.html for unmatched routes
-            // Only add if we have a default route component
-            if (state.default_routes.length > 0) {
-              const default_route = state.default_routes[0];
-              routes.push(
-                Builder.full_route(
-                  client_config.name,
-                  default_route.file_entry.parsed_path,
-                  Router.route("GET", "/", indexHandler),
-                ),
-              );
-            }
-
-            return Effect.wrap(routes);
-          },
+          ({ config, indexHandler, state, bundle_assets }) =>
+            create_routes(
+              config,
+              indexHandler,
+              state,
+              bundle_assets,
+              client_config.name,
+            ),
         ),
-        Effect.map(({ routes }) => routes),
+        Effect.map(({ routes }) =>
+          routes
+        ),
       ),
   };
 }

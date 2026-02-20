@@ -20,6 +20,9 @@ async function evaluateEffect<A>(
   const [result] = await effect(config);
   return result;
 }
+function unsafe_import(path: string): Promise<unknown> {
+  return import(path);
+}
 
 // ============================================================================
 // static_builder tests
@@ -50,7 +53,7 @@ Deno.test("static_builder - creates route for file", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -80,7 +83,7 @@ Deno.test("static_builder - excludes files with excluded extensions", async () =
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -112,7 +115,7 @@ Deno.test("static_builder - process_build returns empty (no new routes)", async 
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -144,7 +147,7 @@ Deno.test("static_builder - route handler reads file content", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -190,7 +193,7 @@ Deno.test("static_builder - sets Content-Type header from mime_type", async () =
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -231,7 +234,7 @@ Deno.test("static_builder - handles files without mime_type", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -276,7 +279,7 @@ Deno.test("static_builder - multiple exclude extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -309,7 +312,7 @@ Deno.test("static_builder - integration with build function", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 

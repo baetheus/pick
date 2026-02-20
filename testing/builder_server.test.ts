@@ -24,6 +24,10 @@ async function evaluateEffect<A>(
   return result;
 }
 
+function unsafe_import(path: string): Promise<unknown> {
+  return import(path);
+}
+
 // ============================================================================
 // server_builder tests
 // ============================================================================
@@ -51,7 +55,7 @@ Deno.test("server_builder - skips non-included extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: "/root",
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -77,7 +81,7 @@ Deno.test("server_builder - creates route from PartialRoute export", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -106,7 +110,7 @@ Deno.test("server_builder - creates multiple routes from multi-export file", asy
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -140,7 +144,7 @@ Deno.test("server_builder - returns empty for files without routes", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -172,7 +176,7 @@ Deno.test("server_builder - process_build returns empty (no new routes)", async 
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -202,7 +206,7 @@ Deno.test("server_builder - route handler returns correct response", async () =>
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -253,7 +257,7 @@ Deno.test("server_builder - applies middleware to routes", async () => {
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 
@@ -294,7 +298,7 @@ Deno.test("server_builder - custom include_extensions", async () => {
   const config: Builder.BuildConfig = {
     root_path: FIXTURES_DIR,
     fs,
-    unsafe_import: (path) => import(path),
+    unsafe_import,
     builders: [builder],
   };
 

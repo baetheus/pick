@@ -53,7 +53,6 @@ export const deno_fs: Filesystem = {
       Arr.map((walk_entry) => {
         const normalized_path = normalize(walk_entry.path);
         const parsed_path = parse(normalized_path);
-        console.log({ walk_entry, normalized_path, parsed_path });
         return file_entry(
           parsed_path,
           relative(normalized_root, normalized_path),

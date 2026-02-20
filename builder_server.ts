@@ -1,6 +1,7 @@
 import * as Option from "@baetheus/fun/option";
 import * as Array from "@baetheus/fun/array";
 import * as Effect from "@baetheus/fun/effect";
+import * as Path from "@std/path";
 import { pipe } from "@baetheus/fun/fn";
 
 import type * as Router from "./router.ts";
@@ -30,6 +31,12 @@ export type ServerBuilderOptions = {
 };
 
 const filterPartialRoute = Option.fromPredicate(Tokens.is_partial_route);
+
+function strip_extension(path: string): string {
+  const parsed_path = Path.parse(Path.normalize(path));
+  const stripped = Path.join(parsed_path.dir, parsed_path.name);
+  return stripped;
+}
 
 function wrap_handler(
   handler: Router.Handler,

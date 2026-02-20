@@ -305,6 +305,12 @@ export type BuildConfig = {
   readonly builders: readonly Builder[];
 };
 
+function strip_extension(path: string): string {
+  const parsed_path = Path.parse(Path.normalize(path));
+  const stripped = Path.join(parsed_path.dir, parsed_path.name);
+  return stripped;
+}
+
 /**
  * Converts a PartialRoute token to a full Route with file path information.
  *
@@ -327,7 +333,7 @@ export function from_partial_route(
   return full_route(
     builder,
     file_entry.parsed_path,
-    Router.route(method, file_entry.relative_path, handler),
+    Router.route(method, strip_extension(file_entry.relative_path), handler),
   );
 }
 

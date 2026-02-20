@@ -6,7 +6,7 @@ jobs:
   format:
     strategy:
       matrix:
-        deno: ["v2.6.12"]
+        deno: ["latest"]
         os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: ${{ matrix.deno }}
 

@@ -309,16 +309,20 @@ export type ClientPage<T extends string = string, P = unknown> = {
   readonly component: FunctionComponent<P>;
 };
 
-type ClientPageFactory<T extends string, P = unknown> = {
-  readonly create: (component: FunctionComponent<P>) => ClientPage<T, P>;
-  readonly refine: (value: unknown) => value is ClientPage<T, P>;
+// deno-lint-ignore no-explicit-any
+type ClientPageFactory<T extends string, U = any> = {
+  readonly create: <P extends U>(
+    component: FunctionComponent<P>,
+  ) => ClientPage<T, P>;
+  readonly refine: (value: unknown) => value is ClientPage<T, unknown>;
 };
 
-function create_client_page<T extends string, P>(
+// deno-lint-ignore no-explicit-any
+function create_client_page<T extends string, U = any>(
   tag: T,
-): ClientPageFactory<T, P> {
+): ClientPageFactory<T, U> {
   return {
-    create: (component) => ({
+    create: <P extends U>(component: FunctionComponent<P>) => ({
       type: ClientPageSymbol,
       tag,
       component,
@@ -326,7 +330,8 @@ function create_client_page<T extends string, P>(
     refine: Refinement.struct({
       type: Refinement.literal(ClientPageSymbol),
       tag: Refinement.literal(tag),
-      component: (c): c is FunctionComponent<P> => typeof c === "function",
+      component: (c): c is FunctionComponent<unknown> =>
+        typeof c === "function",
     }),
   };
 }

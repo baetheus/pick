@@ -1,6 +1,6 @@
 {
   "name": "@baetheus/pick",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "unstable": [
     "bundle"
   ],

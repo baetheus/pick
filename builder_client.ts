@@ -12,6 +12,7 @@ import * as Effect from "@baetheus/fun/effect";
 import * as Err from "@baetheus/fun/err";
 import * as Path from "@std/path";
 import * as Refinement from "@baetheus/fun/refinement";
+import * as Css from "@baetheus/css";
 import { pipe } from "@baetheus/fun/fn";
 import { contentType } from "@std/media-types";
 import { renderToString } from "preact-render-to-string";
@@ -55,11 +56,18 @@ type ClientRouteEntry<T extends string, P = unknown> = {
   readonly export_pair: [export_name: string, Tokens.ClientPage<T, P>];
 };
 
+type CssEntry = {
+  readonly file_entry: Builder.FileEntry;
+  readonly export_name: string;
+  readonly css: Css.Style | Css.AtRule;
+};
+
 type ClientBuilderState = {
   routes: ClientRouteEntry<"ClientRoute">[];
   default_routes: ClientRouteEntry<"ClientDefaultRoute">[];
   wrappers: ClientRouteEntry<"ClientWrapper", Tokens.ClientWrapperParameters>[];
   indices: ClientRouteEntry<"ClientIndex", Tokens.ClientIndexParameters>[];
+  css: CssEntry[];
 };
 
 function strip_extension(path: string): string {
@@ -401,6 +409,32 @@ function create_bundle_assets(
   );
 }
 
+function create_css_asset(
+  state: ClientBuilderState,
+  bundle_assets: Map<string, Uint8Array>,
+): Builder.BuildEffect<Map<string, Uint8Array>> {
+  if (state.css.length === 0) {
+    return Effect.right(bundle_assets);
+  }
+
+  const items = state.css.map((entry) => entry.css);
+  const cssContent = Css.render(items, Css.MINIMAL_RENDER);
+  const encoder = new TextEncoder();
+  const cssBytes = encoder.encode(cssContent);
+
+  // Generate a hash for the CSS file name
+  const hashBuffer = new Uint8Array(cssBytes.length);
+  hashBuffer.set(cssBytes);
+  let hash = 0;
+  for (const byte of hashBuffer) {
+    hash = ((hash << 5) - hash + byte) | 0;
+  }
+  const cssFileName = `styles-${Math.abs(hash).toString(36)}.css`;
+
+  bundle_assets.set(cssFileName, cssBytes);
+  return Effect.right(bundle_assets);
+}
+
 function create_index_handler(
   bundle_assets: Map<string, Uint8Array>,
   state: ClientBuilderState,
@@ -526,6 +560,7 @@ export function client_builder(
     default_routes: [],
     wrappers: [],
     indices: [],
+    css: [],
   };
 
   return {
@@ -553,6 +588,14 @@ export function client_builder(
               state.wrappers.push({ file_entry, export_pair });
             } else if (client_index_pair(export_pair)) {
               state.indices.push({ file_entry, export_pair });
+            } else if (
+              Css.isStyle(export_pair[1]) || Css.isAtRule(export_pair[1])
+            ) {
+              state.css.push({
+                file_entry,
+                export_name: export_pair[0],
+                css: export_pair[1],
+              });
             }
           }
 
@@ -584,16 +627,22 @@ export function client_builder(
             outputDir: config.root_path,
             entrypoints: [entrypoint],
           })),
-        Effect.bind("indexHandler", ({ bundle_assets, state }) =>
-          create_index_handler(bundle_assets, state, client_config.title)),
+        Effect.bind("bundle_assets_with_css", ({ bundle_assets, state }) =>
+          create_css_asset(state, bundle_assets)),
+        Effect.bind("indexHandler", ({ bundle_assets_with_css, state }) =>
+          create_index_handler(
+            bundle_assets_with_css,
+            state,
+            client_config.title,
+          )),
         Effect.bind(
           "routes",
-          ({ config, indexHandler, state, bundle_assets }) =>
+          ({ config, indexHandler, state, bundle_assets_with_css }) =>
             create_routes(
               config,
               indexHandler,
               state,
-              bundle_assets,
+              bundle_assets_with_css,
               client_config.name,
             ),
         ),

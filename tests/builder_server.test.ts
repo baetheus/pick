@@ -308,6 +308,8 @@ Deno.test("server_builder - custom include_extensions", async () => {
     config,
   );
 
+  console.log({ tsResult, tsxResult });
+
   // .ts should be processed
   assertEquals(Either.isRight(tsResult), true);
   if (Either.isRight(tsResult)) {

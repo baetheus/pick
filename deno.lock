@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@baetheus/css@^0.0.3": "0.0.3",
     "jsr:@baetheus/fun@*": "2.3.5",
     "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.8",
     "jsr:@baetheus/pick@0.11": "0.11.0",
@@ -20,6 +21,7 @@
     "jsr:@std/path@^1.0.8": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@types/node@*": "22.12.0",
+    "npm:csstype@^3.2.3": "3.2.3",
     "npm:pino@*": "9.7.0",
     "npm:preact-iso@^2.6.0": "2.11.1_preact@10.27.2_preact-render-to-string@6.6.3__preact@10.27.2",
     "npm:preact-render-to-string@^6.5.0": "6.6.3_preact@10.27.2",
@@ -27,6 +29,12 @@
     "npm:rxjs@7.8.1": "7.8.1"
   },
   "jsr": {
+    "@baetheus/css@0.0.3": {
+      "integrity": "1f3fadb1d11f2ed10a4cb849274a0056ed25cb3c5ad55d74b0251f49ebc94e2e",
+      "dependencies": [
+        "npm:csstype"
+      ]
+    },
     "@baetheus/fun@2.3.5": {
       "integrity": "2f9f5d133643d83c48e23460d7592d6db0cad553b7cf984c3f5089396d00aa4b"
     },
@@ -37,7 +45,11 @@
       "integrity": "b3da2d6d769c3b46507e3f7a3e7cdfde5eb1fb3b53ab90ecdc41e5ef362ac1d2",
       "dependencies": [
         "jsr:@baetheus/fun@^3.0.0-rc.8",
-        "npm:preact"
+        "jsr:@std/fs@^1.0.17",
+        "jsr:@std/media-types",
+        "jsr:@std/path@^1.0.8",
+        "npm:preact",
+        "npm:preact-render-to-string"
       ]
     },
     "@deno/cache-dir@0.13.2": {
@@ -122,6 +134,9 @@
     },
     "atomic-sleep@1.0.0": {
       "integrity": "sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ=="
+    },
+    "csstype@3.2.3": {
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="
     },
     "fast-redact@3.5.0": {
       "integrity": "sha512-dwsoQlS7h9hMeYUq1W++23NDcBLV4KqONnITDV9DjfS3q1SgDGVrBdvvTLUotWtPSD7asWDV9/CmsZPy8Hf70A=="
@@ -285,6 +300,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@baetheus/css@^0.0.3",
       "jsr:@baetheus/fun@^3.0.0-rc.8",
       "jsr:@baetheus/pick@0.11",
       "jsr:@std/assert@^1.0.15",

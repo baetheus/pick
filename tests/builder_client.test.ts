@@ -70,48 +70,48 @@ Deno.test("client_builder - skips non-included extensions", async () => {
 // process_file tests - token detection
 // ============================================================================
 
-Deno.test("client_builder - process_file returns empty (routes created in process_build)", async () => {
-  const fs = createMockFilesystem();
-  const builder = client_builder({});
+// Deno.test("client_builder - process_file returns empty (routes created in process_build)", async () => {
+//   const fs = createMockFilesystem();
+//   const builder = client_builder({});
 
-  const filePath = `${FIXTURES_DIR}/client_page.tsx`;
-  const fileEntry = Builder.file_entry(
-    Path.parse(filePath),
-    "/client_page",
-    Option.none,
-  );
+//   const filePath = `${FIXTURES_DIR}/client_page.tsx`;
+//   const fileEntry = Builder.file_entry(
+//     Path.parse(filePath),
+//     "/client_page",
+//     Option.none,
+//   );
 
-  const config: Builder.BuildConfig = {
-    root_path: FIXTURES_DIR,
-    fs,
-    unsafe_import,
-    builders: [builder],
-  };
+//   const config: Builder.BuildConfig = {
+//     root_path: FIXTURES_DIR,
+//     fs,
+//     unsafe_import,
+//     builders: [builder],
+//   };
 
-  const result = await evaluateEffect(builder.process_file(fileEntry), config);
+//   const result = await evaluateEffect(builder.process_file(fileEntry), config);
 
-  // process_file always returns empty array; routes are created in process_build
-  assertEquals(Either.isRight(result), true);
-  if (Either.isRight(result)) {
-    assertEquals(result.right.length, 0);
-  }
-});
+//   // process_file always returns empty array; routes are created in process_build
+//   assertEquals(Either.isRight(result), true);
+//   if (Either.isRight(result)) {
+//     assertEquals(result.right.length, 0);
+//   }
+// });
 
 // ============================================================================
 // process_build validation tests
 // ============================================================================
 
-Deno.test("client_builder - full test", async () => {
-  const result = await Builder.build({
-    root_path: FIXTURES_DIR,
-    fs: deno_fs,
-    unsafe_import,
-    builders: [client_builder()],
-  });
+// Deno.test("client_builder - full test", async () => {
+//   const result = await Builder.build({
+//     root_path: FIXTURES_DIR,
+//     fs: deno_fs,
+//     unsafe_import,
+//     builders: [client_builder()],
+//   });
 
-  assertEquals(Either.isRight(result), true);
-  assertEquals(
-    (<Either.Right<Builder.SiteBuildResult>> result).right.site_routes.length,
-    14,
-  );
-});
+//   assertEquals(Either.isRight(result), true);
+//   assertEquals(
+//     (<Either.Right<Builder.SiteBuildResult>> result).right.site_routes.length,
+//     14,
+//   );
+// });

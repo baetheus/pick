@@ -6,14 +6,15 @@ jobs:
   test:
     strategy:
       matrix:
-        deno: ["latest"]
+        deno: ["v2.6.10"]
+        # os: [macOS-latest, windows-latest, ubuntu-latest]
         os: [macOS-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Setup repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -21,13 +22,13 @@ jobs:
           deno-version: ${{ matrix.deno }}
 
       - name: Run Deno Tests
-        run: deno test -A --unstable-bundle --parallel --coverage=coverage
+        run: deno test --parallel --coverage=coverage
 
       - name: Generate Coverage
         run: deno coverage --unstable ./coverage --lcov > ./coverage/lcov.info
 
       - name: Coveralls
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2.3.6
         with:
           flag-name: run-${{ matrix.deno }}-${{ matrix.os }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

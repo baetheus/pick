@@ -8,6 +8,8 @@
  * @since 0.3.0
  */
 
+import type { Style } from "@baetheus/css/style";
+
 import * as Effect from "@baetheus/fun/effect";
 import * as Err from "@baetheus/fun/err";
 import * as Path from "@std/path";
@@ -59,7 +61,7 @@ type ClientRouteEntry<T extends string, P = unknown> = {
 type CssEntry = {
   readonly file_entry: Builder.FileEntry;
   readonly export_name: string;
-  readonly css: Css.Style | Css.AtRule;
+  readonly css: Style;
 };
 
 type ClientBuilderState = {
@@ -319,8 +321,6 @@ function safe_bundle(
     (err, config) =>
       client_builder_error("Deno.bundle threw an exception", {
         err,
-        // deno-lint-ignore no-explicit-any
-        test: (<any> err).message,
         config,
         bundle_options,
       }),
@@ -417,8 +417,8 @@ function create_css_asset(
     return Effect.right(bundle_assets);
   }
 
-  const items = state.css.map((entry) => entry.css);
-  const cssContent = Css.render(items, Css.MINIMAL_RENDER);
+  const items = state.css.map((entry) => entry.css) as [Style, ...Style[]];
+  const cssContent = Css.render(Css.MINIMAL_RENDER_OPTIONS, ...items);
   const encoder = new TextEncoder();
   const cssBytes = encoder.encode(cssContent);
 
@@ -589,7 +589,7 @@ export function client_builder(
             } else if (client_index_pair(export_pair)) {
               state.indices.push({ file_entry, export_pair });
             } else if (
-              Css.isStyle(export_pair[1]) || Css.isAtRule(export_pair[1])
+              Css.isStyle(export_pair[1])
             ) {
               state.css.push({
                 file_entry,

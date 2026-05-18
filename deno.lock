@@ -2,18 +2,21 @@
   "version": "5",
   "specifiers": {
     "jsr:@baetheus/css@^0.0.3": "0.0.3",
+    "jsr:@baetheus/css@^0.0.4": "0.0.4",
     "jsr:@baetheus/fun@*": "2.3.5",
-    "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.8",
-    "jsr:@baetheus/pick@0.11": "0.11.0",
+    "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.9",
+    "jsr:@baetheus/fun@^3.0.0-rc.9": "3.0.0-rc.9",
+    "jsr:@baetheus/pick@0.17": "0.17.0",
     "jsr:@deno/cache-dir@0.13.2": "0.13.2",
     "jsr:@deno/emit@*": "0.46.0",
     "jsr:@std/assert@0.223": "0.223.0",
-    "jsr:@std/assert@^1.0.15": "1.0.18",
+    "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/async@*": "1.0.14",
     "jsr:@std/bytes@0.223": "0.223.0",
     "jsr:@std/fmt@0.223": "0.223.0",
     "jsr:@std/fs@0.223": "0.223.0",
-    "jsr:@std/fs@^1.0.17": "1.0.22",
+    "jsr:@std/fs@^1.0.17": "1.0.23",
+    "jsr:@std/fs@^1.0.23": "1.0.23",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/io@0.223": "0.223.0",
     "jsr:@std/media-types@^1.1.0": "1.1.0",
@@ -23,14 +26,19 @@
     "npm:@types/node@*": "22.12.0",
     "npm:csstype@^3.2.3": "3.2.3",
     "npm:pino@*": "9.7.0",
-    "npm:preact-iso@^2.6.0": "2.11.1_preact@10.27.2_preact-render-to-string@6.6.3__preact@10.27.2",
-    "npm:preact-render-to-string@^6.5.0": "6.6.3_preact@10.27.2",
-    "npm:preact@^10.24.0": "10.27.2",
+    "npm:preact-iso@^2.12.0": "2.12.0_preact@10.29.2_preact-render-to-string@6.7.0__preact@10.29.2",
+    "npm:preact-render-to-string@^6.5.0": "6.7.0_preact@10.29.2",
+    "npm:preact-render-to-string@^6.7.0": "6.7.0_preact@10.29.2",
+    "npm:preact@^10.24.0": "10.29.2",
+    "npm:preact@^10.29.2": "10.29.2",
     "npm:rxjs@7.8.1": "7.8.1"
   },
   "jsr": {
     "@baetheus/css@0.0.3": {
-      "integrity": "1f3fadb1d11f2ed10a4cb849274a0056ed25cb3c5ad55d74b0251f49ebc94e2e",
+      "integrity": "1f3fadb1d11f2ed10a4cb849274a0056ed25cb3c5ad55d74b0251f49ebc94e2e"
+    },
+    "@baetheus/css@0.0.4": {
+      "integrity": "ca64cb921a7b818261a31bb8a56e748ae0139ffc5b08c0db88c49f31e5d4610f",
       "dependencies": [
         "npm:csstype"
       ]
@@ -38,18 +46,19 @@
     "@baetheus/fun@2.3.5": {
       "integrity": "2f9f5d133643d83c48e23460d7592d6db0cad553b7cf984c3f5089396d00aa4b"
     },
-    "@baetheus/fun@3.0.0-rc.8": {
-      "integrity": "d84c6f3d403bd91c397c55a5736b1ea39e9054f7a8b0fa689a01743d3657b1ea"
+    "@baetheus/fun@3.0.0-rc.9": {
+      "integrity": "a8ed38c7997532e425e928ca6c5e7b44449aed787bf1f328e5d5f208129f2009"
     },
-    "@baetheus/pick@0.11.0": {
-      "integrity": "b3da2d6d769c3b46507e3f7a3e7cdfde5eb1fb3b53ab90ecdc41e5ef362ac1d2",
+    "@baetheus/pick@0.17.0": {
+      "integrity": "e49434314ce09b39fe6fe357602855e1eaf220ce5460d80d4e0282aec75a0de4",
       "dependencies": [
+        "jsr:@baetheus/css@^0.0.3",
         "jsr:@baetheus/fun@^3.0.0-rc.8",
         "jsr:@std/fs@^1.0.17",
         "jsr:@std/media-types",
         "jsr:@std/path@^1.0.8",
-        "npm:preact",
-        "npm:preact-render-to-string"
+        "npm:preact-render-to-string@^6.5.0",
+        "npm:preact@^10.24.0"
       ]
     },
     "@deno/cache-dir@0.13.2": {
@@ -71,8 +80,8 @@
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"
     },
-    "@std/assert@1.0.18": {
-      "integrity": "270245e9c2c13b446286de475131dc688ca9abcd94fc5db41d43a219b34d1c78",
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
         "jsr:@std/internal"
       ]
@@ -89,8 +98,8 @@
     "@std/fs@0.223.0": {
       "integrity": "3b4b0550b2c524cbaaa5a9170c90e96cbb7354e837ad1bdaf15fc9df1ae9c31c"
     },
-    "@std/fs@1.0.22": {
-      "integrity": "de0f277a58a867147a8a01bc1b181d0dfa80bfddba8c9cf2bacd6747bcec9308",
+    "@std/fs@1.0.23": {
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
         "jsr:@std/internal",
         "jsr:@std/path@^1.1.4"
@@ -170,21 +179,21 @@
       ],
       "bin": true
     },
-    "preact-iso@2.11.1_preact@10.27.2_preact-render-to-string@6.6.3__preact@10.27.2": {
-      "integrity": "sha512-rLy0RmzP/hrDjnFdnEblxFgKtzUj4njkHrpGJBGS7S4QuYw1zv0lA38qsWpeAAB10JAz/hF2CsHrLen9ufCtbw==",
+    "preact-iso@2.12.0_preact@10.29.2_preact-render-to-string@6.7.0__preact@10.29.2": {
+      "integrity": "sha512-k0Y44UONBJ1zBXXCBhJRAa5O4ww8a5FHdLD6l21IxcnsTmDBto4n7KPQAH6xqegsKDMX4SuJ02qItiUlciIlZQ==",
       "dependencies": [
         "preact",
         "preact-render-to-string"
       ]
     },
-    "preact-render-to-string@6.6.3_preact@10.27.2": {
-      "integrity": "sha512-7oHG7jzjriqsFPkSPiPnzrQ0GcxFm6wOkYWNdStK5Ks9YlWSQQXKGBRAX4nKDdqX7HAQuRvI4pZNZMycK4WwDw==",
+    "preact-render-to-string@6.7.0_preact@10.29.2": {
+      "integrity": "sha512-Z4WR8fmLMRpdYqJ9i7vrlXSsSrxVJydwrkEXHapexfARbWfGb7vGcnvNQnIzN0cXciMVOlz/XLoiMCi9gUsy9Q==",
       "dependencies": [
         "preact"
       ]
     },
-    "preact@10.27.2": {
-      "integrity": "sha512-5SYSgFKSyhCbk6SrXyMpqjb5+MQBgfvEKE/OC+PujcY34sOpqtr+0AZQtPYx5IA6VxynQ7rUPCtKzyovpj9Bpg=="
+    "preact@10.29.2": {
+      "integrity": "sha512-7tNmwg/7mzzAoB/8kSg6Hl37JraAZw3Z3A0JSY7VXlZwo82Xn0G7wKbNNs2qoF4ZEEsQGTwDAroNdqKs1ofJxQ=="
     },
     "process-warning@5.0.0": {
       "integrity": "sha512-a39t9ApHNx2L4+HBnQKqxxHNs1r7KF+Intd8Q/g1bUh6q0WIp9voPXJ/x0j+ZL45KF1pJd9+q2jLIRMfvEshkA=="
@@ -300,16 +309,16 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@baetheus/css@^0.0.3",
-      "jsr:@baetheus/fun@^3.0.0-rc.8",
-      "jsr:@baetheus/pick@0.11",
-      "jsr:@std/assert@^1.0.15",
-      "jsr:@std/fs@^1.0.17",
+      "jsr:@baetheus/css@^0.0.4",
+      "jsr:@baetheus/fun@^3.0.0-rc.9",
+      "jsr:@baetheus/pick@0.17",
+      "jsr:@std/assert@^1.0.19",
+      "jsr:@std/fs@^1.0.23",
       "jsr:@std/media-types@^1.1.0",
-      "jsr:@std/path@^1.0.8",
-      "npm:preact-iso@^2.6.0",
-      "npm:preact-render-to-string@^6.5.0",
-      "npm:preact@^10.24.0"
+      "jsr:@std/path@^1.1.4",
+      "npm:preact-iso@^2.12.0",
+      "npm:preact-render-to-string@^6.7.0",
+      "npm:preact@^10.29.2"
     ]
   }
 }
